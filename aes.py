@@ -8,6 +8,7 @@ class Aes():
         self.cipher = [0] * 4
         self.keyRounds = [0] * 14
         self.keylength = keylength
+  
         # Number of column  (Aes128->4, AES192->6, AES256->8)
         self.Nk = keylength//32
 
@@ -109,7 +110,6 @@ class Aes():
     
     def encryption(self):
         self.cipher = self.addRoundKey(0)
-        #print("Encryption")
         for l in range(1, self.Nr):
             # SubByte and shiftRow line order
             for i in range(4):
@@ -225,7 +225,7 @@ class Aes():
             for j in range(4):
                 value = self.s.model().evaluate(self.keyRounds[lap][i][j])
                 test = type(BitVecVal(0xcafe, 8))
-                # Si affichable
+                # if printable
                 if(type(value) == test):
                     value = int(str(value))
                     if(value < 16):
