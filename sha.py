@@ -15,9 +15,7 @@ class Sha():
        
         # Transformation w
         for i in range(16, 64):
-            #self.w[i] = self.sigma_1(self.w[i-2]) + self.w[i-7] + self.sigma_0(self.w[i-15]) + self.w[i-16]
-            self.w[i] = 0 
-
+            self.w[i] = self.sigma_1(self.w[i-2]) + self.w[i-7] + self.sigma_0(self.w[i-15]) + self.w[i-16]
 
         Hconstante = {'A':BitVecVal(0x6a09e667, 32),
                       'B':BitVecVal(0xbb67ae85, 32),
@@ -43,14 +41,17 @@ class Sha():
 # on suppose qu un bloc a hacher
         self.state[0] = Hconstante
 
-        for i in range(0,1):
+        for i in range(0,64):
             self.state[i+1] = self.compression(i, **self.state[i])
 
-        Hconstante = self.state[64]
+        for key, value in self.state[64].items():
+            self.state[64][key] = self.state[0][key] + value
 
     def compression(self, i, A, B, C, D, E, F, G, H):
-        T1 = H + self.Sigma_1(E) + self.Ch(E,F,G) + self.K[i]
-        T1 = T1 + A + self.w[i]
+        T1 = H  + self.Sigma_1(E) 
+        T1 = T1 + self.Ch(E,F,G) 
+        T1 = T1 + self.K[i]
+        T1 = T1 + self.w[i]
         T2 = self.Sigma_0(A) + self.Maj(A,B,C)
         H = G
         G = F
@@ -83,10 +84,11 @@ class Sha():
         sat_sha = self.s.check()
 
         if sat_sha == sat:
-            print(hex(int(str(self.s.model().evaluate(self.state[1]['H'])))))
+            [print(hex(int(str(self.s.model().evaluate(self.state[64][i]))))[2:], end='') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
+            print()
 
     def Ch(self, x, y, z):
-        return ((x & y) ^ (( x ^ 0xFF) & z))
+        return ((x & y) ^ (( x ^ 0xFFFFFFFF) & z))
 
     def Maj(self, x, y, z):
         return ((x & y) ^ (x & z) ^ (y & z))
