@@ -27,7 +27,7 @@ class Sha():
 
         self.state = [0] * 65
 
-# on suppose qu un bloc a hacher
+# We suppose there is only 1 block to hash 
         self.state[0] = Hconstante
 
         for i in range(0,64):
@@ -103,6 +103,5 @@ class Sha():
         return self.s
 
 if __name__=="__main__":
-    sha256 = Sha(224)
-    sha256.digest("616263")
-
+    sha = Sha(224)
+    sha.digest("616263")
