@@ -1,9 +1,34 @@
-from z3 import BitVecVal
+from z3 import BitVecVal, RotateRight, LShR
 
-sha224_param = {'Mblock':512, 'nb_rounds':64, 'maxlength':64}
-sha256_param = {'Mblock':512, 'nb_rounds':64, 'maxlength':64}
-sha384_param = {'Mblock':1024, 'nb_rounds':80, 'maxlength':128}
-sha512_param = {'Mblock':1024, 'nb_rounds':80, 'maxlength':128}
+def Sigma_256_0(self, x):
+    return RotateRight(x, 2) ^ RotateRight(x, 13) ^ RotateRight(x, 22)
+
+def Sigma_256_1(self, x):
+    return RotateRight(x, 6) ^ RotateRight(x, 11) ^ RotateRight(x, 25)
+
+def sigma_256_0(self, x):
+    return RotateRight(x, 7) ^ RotateRight(x, 18) ^ LShR(x, 3)
+
+def sigma_256_1(self, x):
+    return RotateRight(x, 17) ^ RotateRight(x, 19) ^ LShR(x, 10)
+
+def Sigma_512_0(self, x):
+    return RotateRight(x, 28) ^ RotateRight(x, 34) ^ RotateRight(x, 39)
+
+def Sigma_512_1(self, x):
+    return RotateRight(x, 14) ^ RotateRight(x, 18) ^ RotateRight(x, 41)
+
+def sigma_512_0(self, x):
+    return RotateRight(x, 1) ^ RotateRight(x, 8) ^ LShR(x, 7)
+
+def sigma_512_1(self, x):
+    return RotateRight(x, 19) ^ RotateRight(x, 61) ^ LShR(x, 6) 
+
+
+sha224_param = {'Mblock':512, 'nb_rounds':64, 'maxlength':64, "Sigma_0":Sigma_256_0,  "Sigma_1":Sigma_256_1, "sigma_0":sigma_256_0, "sigma_1":sigma_256_1}
+sha256_param = {'Mblock':512, 'nb_rounds':64, 'maxlength':64, "Sigma_0":Sigma_256_0,  "Sigma_1":Sigma_256_1, "sigma_0":sigma_256_0, "sigma_1":sigma_256_1}
+sha384_param = {'Mblock':1024, 'nb_rounds':80, 'maxlength':128, "Sigma_0":Sigma_512_0,  "Sigma_1":Sigma_512_1, "sigma_0":sigma_512_0, "sigma_1":sigma_512_1}
+sha512_param = {'Mblock':1024, 'nb_rounds':80, 'maxlength':128, "Sigma_0":Sigma_512_0,  "Sigma_1":Sigma_512_1, "sigma_0":sigma_512_0, "sigma_1":sigma_512_1}
 
 sha_param = {224:sha224_param, 256:sha256_param, 384:sha384_param, 512:sha512_param}
 

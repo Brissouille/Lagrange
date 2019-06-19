@@ -1,11 +1,11 @@
 from z3 import *
-from constant import Ksha, Hsha, sha_param
+from .constant import Ksha, Hsha, sha_param
 
 class Sha():
     message = 0
     def __init__(self, sha_type):
        
-        self.sha_type = sha_type
+        sha_type = sha_type
         self.hash_param = sha_param[sha_type]
 
         self.message = BitVecs(["message%02d" %i for i in range(self.hash_param['Mblock'])], 1)
@@ -78,28 +78,33 @@ class Sha():
         sat_sha = self.s.check()
 
         if sat_sha == sat:
-            #[print(hex(int(str(self.s.model().evaluate(self.state[64][i]))))[2:], end='') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
+            [print(hex(int(str(self.s.model().evaluate(self.state[64][i]))))[2:], end='') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
+            #[print(hex(int(str(self.s.model().evaluate(self.state[1][i]))))[2:], end=' ') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
             print()
 
     def Ch(self, x, y, z):
         # Compute the value to perform a completion on 32 or 64 bits
-        size_ff = (2**32) ** (self.hash_param['Mblock'] // 512) - 1 
+        size_ff = (2**32) ** (self.hash_param['Mblock'] // 512) - 1
         return ((x & y) ^ (( x ^ size_ff) & z))
 
     def Maj(self, x, y, z):
         return ((x & y) ^ (x & z) ^ (y & z))
 
     def Sigma_0(self, x):
-        return RotateRight(x, 2) ^ RotateRight(x, 13) ^ RotateRight(x, 22)
+        f = self.hash_param['Sigma_0']
+        return f(self,x)
 
     def Sigma_1(self, x):
-        return RotateRight(x, 6) ^ RotateRight(x, 11) ^ RotateRight(x, 25)
+        f = self.hash_param['Sigma_1']
+        return f(self,x)
 
     def sigma_0(self, x):
-        return RotateRight(x, 7) ^ RotateRight(x, 18) ^ LShR(x, 3)
+        f = self.hash_param['sigma_0']
+        return f(self,x)
 
     def sigma_1(self, x):
-        return RotateRight(x, 17) ^ RotateRight(x, 19) ^ LShR(x, 10)
+        f = self.hash_param['sigma_1']
+        return f(self, x)
 
     def reset(self):
         self.s = Sha.resetSolver(self)
@@ -108,6 +113,3 @@ class Sha():
         self.s = Solver()
         return self.s
 
-if __name__=="__main__":
-    sha = Sha(512)
-    sha.digest("616263")
