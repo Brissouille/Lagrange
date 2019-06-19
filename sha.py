@@ -1,23 +1,24 @@
 from z3 import *
-from constant import Ksha, Hsha
+from constant import Ksha, Hsha, sha_param
 
 class Sha():
     message = 0
     def __init__(self, sha_type):
        
         self.sha_type = sha_type
+        self.hash_param = sha_param[sha_type]
 
-        self.message = BitVecs(["message%02d" %i for i in range(512)], 1)
+        self.message = BitVecs(["message%02d" %i for i in range(self.hash_param['Mblock'])], 1)
        
         # Init Solver
         self.s = Solver()
 
         # Concatenation in 32 bits words
-        self.w = [0] * 64
+        self.w = [0] * 64 
         for i  in range(0, 512, 32):
             self.w[i//32] = Concat(self.message[i:i+32])
        
-        # Transformation w
+        # Transformation W
         for i in range(16, 64):
             self.w[i] = self.sigma_1(self.w[i-2]) + self.w[i-7] + self.sigma_0(self.w[i-15]) + self.w[i-16]
 
@@ -25,16 +26,17 @@ class Sha():
 
         self.K = Ksha[sha_type]
 
-        self.state = [0] * 65
+        nb_rounds = self.hash_param['nb_rounds']
+        self.state = [0] * (nb_rounds + 1)
 
 # We suppose there is only 1 block to hash 
         self.state[0] = Hconstante
 
-        for i in range(0,64):
+        for i in range(0, nb_rounds):
             self.state[i+1] = self.compression(i, **self.state[i])
 
-        for key, value in self.state[64].items():
-            self.state[64][key] = self.state[0][key] + value
+        for key, value in self.state[nb_rounds].items():
+            self.state[nb_rounds][key] = self.state[0][key] + value
 
     def compression(self, i, A, B, C, D, E, F, G, H):
         T1 = H  + self.Sigma_1(E) 
@@ -63,7 +65,8 @@ class Sha():
         # Padding 
         k = (448 - l - 1) % 512
         zpadding = "1" + "0" * k
-        m = m + zpadding + "{:064b}".format(l)
+        forme = "{:0"+str(self.hash_param['maxlength'])+"b}"
+        m = m + zpadding + forme.format(l)
         
         # Prepare equation
         for i in range(0,len(m)):
