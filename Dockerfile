@@ -18,8 +18,9 @@ RUN pip3 install z3
 
 WORKDIR python
 
-# Add your files in the docker
-ADD Lagrange Lagrange
+# Add all file in Lagrange
+COPY *.py ./
+
 
 # Execute this function when the container is launched
 #CMD [ "python3", "clefs_test.py" ]
