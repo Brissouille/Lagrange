@@ -14,19 +14,21 @@ class Sha():
         self.s = Solver()
 
         # Concatenation in 32 bits words
-        self.w = [0] * 64 
-        for i  in range(0, 512, 32):
-            self.w[i//32] = Concat(self.message[i:i+32])
+        self.w = [0] * self.hash_param['nb_rounds']
+        size_word = self.hash_param['Mblock']//16 
+        nb_rounds = self.hash_param['nb_rounds']
+        
+        for i  in range(0, self.hash_param['Mblock'], size_word):
+            self.w[i//size_word] = Concat(self.message[i:i+size_word])
        
         # Transformation W
-        for i in range(16, 64):
+        for i in range(16, nb_rounds):
             self.w[i] = self.sigma_1(self.w[i-2]) + self.w[i-7] + self.sigma_0(self.w[i-15]) + self.w[i-16]
 
         Hconstante = Hsha[sha_type]
 
         self.K = Ksha[sha_type]
 
-        nb_rounds = self.hash_param['nb_rounds']
         self.state = [0] * (nb_rounds + 1)
 
 # We suppose there is only 1 block to hash 
@@ -63,7 +65,7 @@ class Sha():
         l = len(m)
 
         # Padding 
-        k = (448 - l - 1) % 512
+        k = (self.hash_param['Mblock']*7//8 - l - 1) % self.hash_param['Mblock'] 
         zpadding = "1" + "0" * k
         forme = "{:0"+str(self.hash_param['maxlength'])+"b}"
         m = m + zpadding + forme.format(l)
@@ -76,12 +78,13 @@ class Sha():
         sat_sha = self.s.check()
 
         if sat_sha == sat:
-            [print(hex(int(str(self.s.model().evaluate(self.state[64][i]))))[2:], end='') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
-            if():
-                print()
+            #[print(hex(int(str(self.s.model().evaluate(self.state[64][i]))))[2:], end='') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
+            print()
 
     def Ch(self, x, y, z):
-        return ((x & y) ^ (( x ^ 0xFFFFFFFF) & z))
+        # Compute the value to perform a completion on 32 or 64 bits
+        size_ff = (2**32) ** (self.hash_param['Mblock'] // 512) - 1 
+        return ((x & y) ^ (( x ^ size_ff) & z))
 
     def Maj(self, x, y, z):
         return ((x & y) ^ (x & z) ^ (y & z))
@@ -106,5 +109,5 @@ class Sha():
         return self.s
 
 if __name__=="__main__":
-    sha = Sha(224)
+    sha = Sha(512)
     sha.digest("616263")
