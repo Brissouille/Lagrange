@@ -4,8 +4,8 @@ from .constant import Ksha, Hsha, sha_param
 class Sha():
     message = 0
     def __init__(self, sha_type):
-       
-        sha_type = sha_type
+      
+        self.sha_type = sha_type
         self.hash_param = sha_param[sha_type]
 
         self.message = BitVecs(["message%02d" %i for i in range(self.hash_param['Mblock'])], 1)
@@ -13,11 +13,11 @@ class Sha():
         # Init Solver
         self.s = Solver()
 
-        # Concatenation in 32 bits words
-        self.w = [0] * self.hash_param['nb_rounds']
         size_word = self.hash_param['Mblock']//16 
         nb_rounds = self.hash_param['nb_rounds']
         
+        self.w = [0] * nb_rounds 
+        # Concatenation in 32 or 64 bits words
         for i  in range(0, self.hash_param['Mblock'], size_word):
             self.w[i//size_word] = Concat(self.message[i:i+size_word])
        
@@ -25,8 +25,8 @@ class Sha():
         for i in range(16, nb_rounds):
             self.w[i] = self.sigma_1(self.w[i-2]) + self.w[i-7] + self.sigma_0(self.w[i-15]) + self.w[i-16]
 
+        # Initialisation of the constants
         Hconstante = Hsha[sha_type]
-
         self.K = Ksha[sha_type]
 
         self.state = [0] * (nb_rounds + 1)
@@ -34,9 +34,11 @@ class Sha():
 # We suppose there is only 1 block to hash 
         self.state[0] = Hconstante
 
-        for i in range(0, nb_rounds):
-            self.state[i+1] = self.compression(i, **self.state[i])
+        # for each round, we perform a comppression function
+        for t in range(0, nb_rounds):
+            self.state[t+1] = self.compression(t, **self.state[t])
 
+        # Last operation for the sha
         for key, value in self.state[nb_rounds].items():
             self.state[nb_rounds][key] = self.state[0][key] + value
 
@@ -59,7 +61,7 @@ class Sha():
 
     def digest(self, message):
         self.s.reset()
-        # template which keeps the zeros on the left and transforms message in binary
+        # A format string which keeps the zeros on the left and transforms message in binary
         forme = "{:0"+str(len(message)*4)+"b}"
         m = forme.format(int(message, 16))
         l = len(m)
@@ -78,12 +80,14 @@ class Sha():
         sat_sha = self.s.check()
 
         if sat_sha == sat:
-            [print(hex(int(str(self.s.model().evaluate(self.state[64][i]))))[2:], end='') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
-            #[print(hex(int(str(self.s.model().evaluate(self.state[1][i]))))[2:], end=' ') for i in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']]
+            # to print in hex on 8 caracteres or 16 caracteres
+            forme = "{:0"+str(self.hash_param['Mblock']//64)+"x}"
+            size_hash = self.sha_type // (self.hash_param['Mblock'] // 16)
+            [print(forme.format(int(str(self.s.model().evaluate(self.state[-1][chr(i+0x41)])))), end='') for i in range(size_hash)] 
             print()
 
     def Ch(self, x, y, z):
-        # Compute the value to perform a completion on 32 or 64 bits
+        # size_ff is used to perform a completion on 32 or 64 bits
         size_ff = (2**32) ** (self.hash_param['Mblock'] // 512) - 1
         return ((x & y) ^ (( x ^ size_ff) & z))
 
