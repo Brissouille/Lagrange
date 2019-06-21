@@ -47,6 +47,7 @@ class Aes_Cbc():
             for i in range(4):
                 for j in range(4):
                     print("{:02x}".format(int(str(self.s.model().evaluate(self.aes[b].cipher[i][j])))), end='')
+            print('', end=' ')
         print()
 
     def addIv(self, iv):
@@ -61,10 +62,12 @@ class Aes_Cbc():
                     self.s.add(self.message[b][i][j]==int(value[2*(i*4+j):2*(i*4+j+1)],16))
 
     def encrypt(self, key, plaintext, iv):
+        self.reset()
         plain_len = len(plaintext)
 
+        padding = "0" * (self.blocks * 32 - plain_len)
+
         # We padd with zeroes bytes
-        padding = "0"*(32 - (plain_len % 32) % 32)
         plaintext = plaintext + padding
 
         # Init iv in solver
@@ -78,9 +81,12 @@ class Aes_Cbc():
             for j in range(0, 4):
                 self.aes[0].addPartialKey(i//4, i, j, int(key[2*(i*4+j):2*(i*4+j+1)], 16))
 
+        # Before to check, we agregate the solver of the Aes class and the solver of the Aes_Cbc class
+        for b in range(self.blocks):
+            self.s.add(self.aes[b].s.assertions())
         self.check()
 
-    def decrypt(self, cipher):
+    def decrypt(self, key, cipher):
         pass
 
     def resetSolver(self):
