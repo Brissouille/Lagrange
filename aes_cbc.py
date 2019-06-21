@@ -4,6 +4,9 @@ from .model import Model
 
 class Aes_Cbc():
     def __init__(self, keylength, size_message): 
+        # Init the solver
+        self.s = Solver()
+
         # The message must be a mutliple of 16 bytes
         assert((size_message!=0)%16)
         self.blocks = size_message // 16
@@ -11,22 +14,18 @@ class Aes_Cbc():
         # Init message in CBC
         self.message = [0] * self.blocks
 
+        # Aes list
+        self.aes = [0] * self.blocks
+              
         # Init iv and first message
         self.iv = [0] * 4
         self.message[0] = [0] * 4
         for i in range(4):
             self.iv[i] = [0] * 4
-            self.message[0][i] = [0] * 4
             for j in range(4):
                 self.iv[i][j] = BitVec("iv_%02d_%02d" %(i, j), 8)
-                self.message[0][i][j] = BitVec("M0_%02d_%02d" %(i, j), 8)
 
-        # Init the solver
-        self.s = Solver()
-
-        # Aes list
-        self.aes = [0] * self.blocks
-              
+        # Init message
         for b in range(0, self.blocks):
             # Init message of the Aes_Cbc class
             self.message[b] = [0] * 4
