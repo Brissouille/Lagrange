@@ -43,12 +43,16 @@ class Aes_Cbc():
 
     def check(self):
         self.s.check()
-        print("{:02x}".format(int(str(self.s.model().evaluate(self.aes[1].cipher[1][2])))))
+        for b in range(self.blocks):
+            for i in range(4):
+                for j in range(4):
+                    print("{:02x}".format(int(str(self.s.model().evaluate(self.aes[b].cipher[i][j])))), end='')
+        print()
 
     def addIv(self, iv):
         for i in range(4):
             for j in range(4):
-                self.s.add(self.iv[i][j]==iv[2*(4*i+j):2*(4*i+j+1)])
+                self.s.add(self.iv[i][j]==int(iv[2*(4*i+j):2*(4*i+j+1)], 16))
     
     def addMessage(self, value):
         for b in range(self.blocks):
