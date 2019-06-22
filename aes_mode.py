@@ -2,8 +2,8 @@ from z3 import *
 from .aes import Aes
 from .model import Model
 
-class Aes_Cbc():
-    def __init__(self, keylength, size_message): 
+class Aes_Mode():
+    def __init__(self, mode, keylength, size_message): 
         # Init the solver
         self.s = Solver()
 
@@ -79,7 +79,7 @@ class Aes_Cbc():
         # Add the key in one aes -> all aes are impacted
         for i in range(0, self.aes[0].Nk):
             for j in range(0, 4):
-                self.aes[0].addPartialKey(i//4, i, j, int(key[2*(i*4+j):2*(i*4+j+1)], 16))
+                self.aes[0].addPartialKey(i//4, i%4, j, int(key[2*(i*4+j):2*(i*4+j+1)], 16))
 
         # Before to check, we agregate the solver of the Aes class and the solver of the Aes_Cbc class
         for b in range(self.blocks):
@@ -92,10 +92,23 @@ class Aes_Cbc():
     def resetSolver(self):
         s = Solver()
         s.reset()
-        
+       
+        # reset aes blocks
+        for b in range(self.blocks):
+            self.aes[b].reset()
+
         # Init only Sbox 
         s.add(self.aes[0].s.assertions())
 
+        # Init the mode for the Aes
+        self.init_mode(s)
+
+        return s
+            
+    def reset(self):
+        self.s = Aes_Mode.resetSolver(self)
+
+    def init_mode(self, s):
         for i in range(4):
             for j in range(4):
                 s.add(self.aes[0].message[i][j] == self.message[0][i][j] ^ self.iv[i][j])
@@ -106,7 +119,4 @@ class Aes_Cbc():
             for i in range(4):
                 for j in range(4):
                     s.add(self.aes[b].message[i][j] == self.message[b][i][j] ^ self.aes[b-1].cipher[i][j])
-        return s
-            
-    def reset(self):
-        self.s = Aes_Cbc.resetSolver(self)
+
