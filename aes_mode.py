@@ -3,7 +3,7 @@ from .aes import Aes
 from .model import Model
 
 class Aes_Mode():
-    def __init__(self, mode, keylength, size_message): 
+    def __init__(self, keylength, size_message): 
         # Init the solver
         self.s = Solver()
 
@@ -11,24 +11,27 @@ class Aes_Mode():
         assert((size_message!=0)%16)
         self.blocks = size_message // 16
         
-        # Init message in CBC
+        # Init message and cipher
         self.message = [0] * self.blocks
+        self.cipher = [0] * self.blocks
 
         # Aes list
         self.aes = [0] * self.blocks
               
         # Init iv and first message
         self.iv = [0] * 4
-        self.message[0] = [0] * 4
         for i in range(4):
             self.iv[i] = [0] * 4
             for j in range(4):
                 self.iv[i][j] = BitVec("iv_%02d_%02d" %(i, j), 8)
 
+        self.message[0] = [0] * 4
+        self.cipher[0] = [0] * 4
         # Init message
         for b in range(0, self.blocks):
-            # Init message of the Aes_Cbc class
+            # Init message and cipher of the Aes_Cbc class
             self.message[b] = [0] * 4
+            self.cipher[b] = [0] * 4
 
             # Init each Aes with a different plaintext name
             self.aes[b] = Aes(keylength, "m"+str(b))
@@ -36,17 +39,19 @@ class Aes_Mode():
             # We init mi in the Aes class by the Mi ^ Ci-1 in the Aes_Cbc class
             for i in range(4):
                 self.message[b][i] = [0] * 4
+                self.cipher[b][i] = [0] * 4
                 for j in range(4):
                     self.message[b][i][j] = BitVec("M%02d_%02d_%02d" %(b, i, j), 8)
+                    self.cipher[b][i][j] = BitVec("C%02d_%02d_%02d" %(b, i, j), 8)
        
         self.reset()
 
     def check(self):
-        self.s.check()
+        sat_resp = self.s.check()
         for b in range(self.blocks):
             for i in range(4):
                 for j in range(4):
-                    print("{:02x}".format(int(str(self.s.model().evaluate(self.aes[b].cipher[i][j])))), end='')
+                    print("{:02x}".format(int(str(self.s.model().evaluate(self.cipher[b][i][j])))), end='')
             print('', end=' ')
         print()
 
@@ -109,14 +114,15 @@ class Aes_Mode():
         self.s = Aes_Mode.resetSolver(self)
 
     def init_mode(self, s):
-        for i in range(4):
-            for j in range(4):
-                s.add(self.aes[0].message[i][j] == self.message[0][i][j] ^ self.iv[i][j])
-
-        # We add all the assertions of the other system of equation
-        for b in range(1, self.blocks):
-            self.aes[b].s.reset()
-            for i in range(4):
-                for j in range(4):
-                    s.add(self.aes[b].message[i][j] == self.message[b][i][j] ^ self.aes[b-1].cipher[i][j])
-
+        raise Excpetion('Abstract method init_mode called')
+#        for i in range(4):
+#            for j in range(4):
+#                s.add(self.aes[0].message[i][j] == self.message[0][i][j] ^ self.iv[i][j])
+#
+#        # We add all the assertions of the other system of equation
+#        for b in range(1, self.blocks):
+#            self.aes[b].s.reset()
+#            for i in range(4):
+#                for j in range(4):
+#                    s.add(self.aes[b].message[i][j] == self.message[b][i][j] ^ self.aes[b-1].cipher[i][j])
+#
