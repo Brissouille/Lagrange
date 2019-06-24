@@ -64,7 +64,7 @@ class Aes_Mode():
         for b in range(self.blocks):
             for i in range(4):
                 for j in range(4):
-                    self.s.add(self.message[b][i][j]==int(value[2*(i*4+j):2*(i*4+j+1)],16))
+                    self.s.add(self.message[b][i][j]==int(value[2*(b*16+i*4+j):2*(b*16+i*4+j+1)],16))
 
     def encrypt(self, key, plaintext, iv):
         self.reset()
@@ -91,7 +91,13 @@ class Aes_Mode():
             self.s.add(self.aes[b].s.assertions())
         self.check()
 
-    def decrypt(self, key, cipher):
+    def addCipher(self, value):
+        for b in range(self.blocks):
+            for i in range(4):
+                for j in range(4):
+                    self.s.add(self.cipher[b][i][j] == int(value[2*(b*16+i*4+j):2*(b*16+i*4+j+1)],16))
+
+    def decrypt(self, key, ciphertext, iv):
         pass
 
     def resetSolver(self):
@@ -115,14 +121,3 @@ class Aes_Mode():
 
     def init_mode(self, s):
         raise Excpetion('Abstract method init_mode called')
-#        for i in range(4):
-#            for j in range(4):
-#                s.add(self.aes[0].message[i][j] == self.message[0][i][j] ^ self.iv[i][j])
-#
-#        # We add all the assertions of the other system of equation
-#        for b in range(1, self.blocks):
-#            self.aes[b].s.reset()
-#            for i in range(4):
-#                for j in range(4):
-#                    s.add(self.aes[b].message[i][j] == self.message[b][i][j] ^ self.aes[b-1].cipher[i][j])
-#
