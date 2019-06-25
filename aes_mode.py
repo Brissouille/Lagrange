@@ -47,14 +47,9 @@ class Aes_Mode():
         self.reset()
 
     def check(self):
-        sat_resp = self.s.check()
-        for b in range(self.blocks):
-            for i in range(4):
-                for j in range(4):
-                    print("{:02x}".format(int(str(self.s.model().evaluate(self.cipher[b][i][j])))), end='')
-            print('', end=' ')
-        print()
-
+        return self.s.check()
+        
+        
     def addIv(self, iv):
         for i in range(4):
             for j in range(4):
@@ -64,7 +59,7 @@ class Aes_Mode():
         for b in range(self.blocks):
             for i in range(4):
                 for j in range(4):
-                    self.s.add(self.message[b][i][j]==int(value[2*(b*16+i*4+j):2*(b*16+i*4+j+1)],16))
+                    self.s.add(self.message[b][i][j] == int(value[2*(b*16+i*4+j):2*(b*16+i*4+j+1)],16))
 
     def encrypt(self, key, plaintext, iv):
         self.reset()
@@ -89,7 +84,19 @@ class Aes_Mode():
         # Before to check, we agregate the solver of the Aes class and the solver of the Aes_Cbc class
         for b in range(self.blocks):
             self.s.add(self.aes[b].s.assertions())
-        self.check()
+        
+        if(self.check() == sat):
+            cipher = self.toString("cipher")
+
+        return cipher
+
+    def toString(self, attribut_key):
+        for b in range(self.blocks):
+            for i in range(4):
+                for j in range(4):
+                    print("{:02x}".format(int(str(self.s.model().evaluate(self.__dict__[attribut_key][b][i][j])))), end='')
+            print('', end=' ')
+        print()
 
     def addCipher(self, value):
         for b in range(self.blocks):
@@ -98,7 +105,28 @@ class Aes_Mode():
                     self.s.add(self.cipher[b][i][j] == int(value[2*(b*16+i*4+j):2*(b*16+i*4+j+1)],16))
 
     def decrypt(self, key, ciphertext, iv):
-        pass
+        self.reset()
+        cipher_len = len(ciphertext)
+
+        # Init iv in solver
+        self.addIv(iv)
+
+        # Add message in the solver
+        self.addCipher(ciphertext)
+
+        # Add the key in one aes -> all aes are impacted
+        for i in range(0, self.aes[0].Nk):
+            for j in range(0, 4):
+                self.aes[0].addPartialKey(i//4, i%4, j, int(key[2*(i*4+j):2*(i*4+j+1)], 16))
+
+        # Before to check, we agregate the solver of the Aes class and the solver of the Aes_Cbc class
+        for b in range(self.blocks):
+            self.s.add(self.aes[b].s.assertions())
+        
+        if(self.check() == sat):
+            message = self.toString("message")
+
+        return message
 
     def resetSolver(self):
         s = Solver()
@@ -108,11 +136,11 @@ class Aes_Mode():
         for b in range(self.blocks):
             self.aes[b].reset()
 
-        # Init only Sbox 
-        s.add(self.aes[0].s.assertions())
-
         # Init the mode for the Aes
         self.init_mode(s)
+        
+        # Init only Sbox 
+        s.add(self.aes[0].s.assertions())
 
         return s
             
