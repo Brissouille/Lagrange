@@ -46,6 +46,14 @@ class Aes_Mode():
        
         self.reset()
 
+    def toString(self, attribut_key):
+        for b in range(self.blocks):
+            for i in range(4):
+                for j in range(4):
+                    print("{:02x}".format(int(str(self.s.model().evaluate(self.__dict__[attribut_key][b][i][j])))), end='')
+            print('', end=' ')
+        print()
+
     def check(self):
         return self.s.check()
         
@@ -84,19 +92,12 @@ class Aes_Mode():
         # Before to check, we agregate the solver of the Aes class and the solver of the Aes_Cbc class
         for b in range(self.blocks):
             self.s.add(self.aes[b].s.assertions())
-        
+       
+        # We resolve the system of equation and return the cipher
         if(self.check() == sat):
             cipher = self.toString("cipher")
 
         return cipher
-
-    def toString(self, attribut_key):
-        for b in range(self.blocks):
-            for i in range(4):
-                for j in range(4):
-                    print("{:02x}".format(int(str(self.s.model().evaluate(self.__dict__[attribut_key][b][i][j])))), end='')
-            print('', end=' ')
-        print()
 
     def addCipher(self, value):
         for b in range(self.blocks):
@@ -148,4 +149,4 @@ class Aes_Mode():
         self.s = Aes_Mode.resetSolver(self)
 
     def init_mode(self, s):
-        raise Excpetion('Abstract method init_mode called')
+        raise NotImplementedError("AES_Mode.init_mode() is an abstract function")
