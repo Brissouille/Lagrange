@@ -1,6 +1,5 @@
 from z3 import *
 from .aes import Aes
-from .model import Model
 
 class Aes_Mode():
     def __init__(self, keylength, size_message): 
@@ -150,3 +149,85 @@ class Aes_Mode():
 
     def init_mode(self, s):
         raise NotImplementedError("AES_Mode.init_mode() is an abstract function")
+
+class Aes_Cbc(Aes_Mode):
+    def __init__(self, keylength, size_message):
+        super().__init__(keylength, size_message)
+
+    def init_mode(self, s):
+        for i in range(4):
+            for j in range(4):
+                s.add(self.aes[0].message[i][j] == self.message[0][i][j] ^ self.iv[i][j])
+                s.add(self.aes[0].cipher[i][j] == self.cipher[0][i][j])
+
+        # We add all the assertions of the other system of equation
+        for b in range(1, self.blocks):
+            self.aes[b].s.reset()
+            for i in range(4):
+                for j in range(4):
+                    s.add(self.aes[b].message[i][j] == self.message[b][i][j] ^ self.aes[b-1].cipher[i][j])
+                    s.add(self.aes[b].cipher[i][j] == self.cipher[b][i][j])
+
+class Aes_Cfb(Aes_Mode):
+    def __init__(self, keylength, size_message):
+        super().__init__(keylength, size_message)
+
+    def init_mode(self, s):
+        for i in range(4):
+            for j in range(4):
+                s.add(self.aes[0].message[i][j] == self.iv[i][j])
+                s.add(self.cipher[0][i][j] == self.aes[0].cipher[i][j] ^ self.message[0][i][j])
+
+        # We add all the assertions of the other system of equation
+        for b in range(1, self.blocks):
+            self.aes[b].s.reset()
+            for i in range(4):
+                for j in range(4):
+                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[i][j] ^ self.message[b][i][j])
+                    s.add(self.aes[b].message[i][j] == self.cipher[b-1][i][j])
+
+class Aes_Ctr(Aes_Mode):
+    def __init__(self, keylength, size_message):
+        super().__init__(keylength, size_message)
+
+    def init_mode(self, s):
+        # We concatenate the initial vector for the addition. Concatenation is column order
+        iv_int = Concat([self.iv[i][j] for i in range(4) for j in range(4)])
+        
+        for b in range(0, self.blocks):
+            # Init the block aes ->  init causes the fail
+            #self.aes[b].s.reset()
+            
+            # Increment the iv in fonction of the block number
+            iv_tmp = iv_int + b
+            
+            # Init the solver for CTR 
+            for i in range(4):
+                for j in range(4):
+                    indice_hi = ( ((3-i)*4 + (3-j) + 1) * 8 -1 )
+                    indice_low = ( ((3-i)*4 + (3-j)) * 8 )
+
+                    # Adding the iv in the solver
+                    s.add(self.aes[b].message[i][j] == simplify(Extract(indice_hi, indice_low, iv_tmp)))
+
+                    # Adding the xor between plain and encrypted iv in the solver
+                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[i][j] ^ self.message[b][i][j])
+
+class Aes_Ofb(Aes_Mode):
+    def __init__(self, keylength, size_message):
+        super().__init__(keylength, size_message)
+
+    def init_mode(self, s):
+        for i in range(4):
+            for j in range(4):
+                s.add(self.aes[0].message[i][j] == self.iv[i][j])
+                s.add(self.cipher[0][i][j] == self.aes[0].cipher[i][j] ^ self.message[0][i][j])
+
+        # We add all the assertions of the other system of equation
+        for b in range(1, self.blocks):
+            self.aes[b].s.reset()
+            for i in range(4):
+                for j in range(4):
+                    s.add(self.aes[b].message[i][j] == self.aes[b-1].cipher[i][j])
+                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[i][j] ^ self.message[b][i][j])
+
