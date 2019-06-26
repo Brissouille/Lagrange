@@ -20,6 +20,8 @@ WORKDIR python
 
 # Add all file in Lagrange
 COPY *.py ./
+COPY Cipher/*.py ./
+COPY Hash/*.py ./
 
 
 # Execute this function when the container is launched
