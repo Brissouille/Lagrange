@@ -8,6 +8,7 @@ class Aes_Ctr(Aes_Mode):
     def init_mode(self, s):
         # We concatenate the initial vector for the addition. Concatenation is column order
         iv_int = Concat([self.iv[i][j] for i in range(4) for j in range(4)])
+        print(iv_int)
         for b in range(0, self.blocks):
             # Init the block aes
             self.aes[b].s.reset()
@@ -18,12 +19,10 @@ class Aes_Ctr(Aes_Mode):
             # Init the solver for CTR 
             for i in range(4):
                 for j in range(4):
+                    indice_hi = ( ((3-i)*4 + (3-j) + 1) * 8 -1 )
+                    indice_low = ( ((3-i)*4 + (3-j)) * 8 )
+
                     # Adding the equation
+                    s.add(self.aes[b].message[i][j] == Extract(indice_hi, indice_low, tmp))
                     s.add(self.cipher[b][i][j] == self.aes[b].cipher[i][j] ^ self.message[b][i][j])
-                  
-                    s.add(self.aes[b].message[i][j] == Extract((3-i)*4+(3-j)*8+7, ((3-i)*4+(3-j)-1)*8, tmp))
-    
-                    tmp = LShR(tmp, 8)
-                    j = (j - 1)%4
-                    if(j==3):
-                        i = i - 1
+
