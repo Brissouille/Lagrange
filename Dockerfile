@@ -19,9 +19,9 @@ RUN pip3 install z3
 WORKDIR python
 
 # Add all file in Lagrange
-COPY *.py ./
-COPY Cipher/*.py ./
-COPY Hash/*.py ./
+COPY *.py ./Lagrange/
+COPY Cipher/*.py ./Lagrange/Cipher/
+COPY Hash/*.py ./Lagrange/Hash/
 
 
 # Execute this function when the container is launched
