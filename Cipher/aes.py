@@ -5,7 +5,7 @@ class Aes():
     masterkey = [0] * 8 
 
     def __init__(self, keylength, prefix="message"):
-        self.cipher = [0] * 4
+        self.cipher = [0] * 14
         self.keyRounds = [0] * 14
         self.keylength = keylength
   
@@ -24,9 +24,10 @@ class Aes():
             self.message[j] = BitVecs([prefix+"_%02d_%02d" %(j, i) for i in range(4)], 8)
        
         self.s = Aes.resetSolver(self)
-        
-        # Init cipher with messages to have the same type
-        self.cipher = self.message
+       
+        for i in range(14):
+            # Init cipher with messages to have the same type
+            self.cipher[i] = self.message
         
         # Init keyRounds
         self.keyRounds = self.expandKey()
@@ -105,30 +106,32 @@ class Aes():
         for i in range(4):
             cipher[i] = [0] * 4
             for j in range(4):
-                cipher[i][j] = self.cipher[i][j] ^ key[i][j]
+                cipher[i][j] = self.cipher[lap][i][j] ^ key[i][j]
         return cipher
     
     def encryption(self):
-        self.cipher = self.addRoundKey(0)
+        self.cipher[0] = self.addRoundKey(0)
         for l in range(1, self.Nr):
             # SubByte and shiftRow line order
             for i in range(4):
-                tmp = [self.subByte(self.cipher[k][i]) for k in range(4)]
+                tmp = [self.subByte(self.cipher[l-1][k][i]) for k in range(4)]
                 for j in range(4):
-                    self.cipher[j][i] = tmp[(j+i)%4]
+                    self.cipher[l][j][i] = tmp[(j+i)%4]
 
             # MixColumn column order
             for i in range(4):
-               self.cipher[i] = self.mixColumn(self.cipher[i])
-            self.cipher = self.addRoundKey(l)
+               self.cipher[l][i] = self.mixColumn(self.cipher[l][i])
+            
+            # Adding the key
+            self.cipher[l] = self.addRoundKey(l)
         
         # SubByte and shiftRow of last roudns - line order 
         for i in range(4):
-            tmp = [self.subByte(self.cipher[k][i]) for k in range(4)]
+            tmp = [self.subByte(self.cipher[self.Nr-1][k][i]) for k in range(4)]
             for j in range(4):
-                self.cipher[j][i] = tmp[(j+i)%4]
+                self.cipher[self.Nr][j][i] = tmp[(j+i)%4]
 
-        self.cipher = self.addRoundKey(self.Nr)
+        self.cipher[self.Nr] = self.addRoundKey(self.Nr)
     
     def encrypt(self, key, plain):
         Aes.reset(self)
@@ -143,7 +146,7 @@ class Aes():
             test = type(BitVecVal(0xcafe, 8))
             for i in range(4):
                 for j in range(4):
-                    toto = self.s.model().evaluate(self.cipher[i][j])
+                    toto = self.s.model().evaluate(self.cipher[self.Nr][i][j])
                     solution.append(int(str(toto)))
 
         elif(sat_resp==unknown):
@@ -179,7 +182,7 @@ class Aes():
         for i in range(4):
             for j in range(4):
                 # *2 to find the indice of the byte
-                self.s.add(self.cipher[i][j]==int(value[2*(i*4+j):2*(i*4+j+1)],16))
+                self.s.add(self.cipher[self.Nr][i][j]==int(value[2*(i*4+j):2*(i*4+j+1)],16))
 
     def addMessage(self, value):
         # Column order to insert
