@@ -56,7 +56,6 @@ class Aes_Mode():
     def check(self):
         return self.s.check()
         
-        
     def addIv(self, iv):
         for i in range(4):
             for j in range(4):
@@ -158,15 +157,15 @@ class Aes_Cbc(Aes_Mode):
         for i in range(4):
             for j in range(4):
                 s.add(self.aes[0].message[i][j] == self.message[0][i][j] ^ self.iv[i][j])
-                s.add(self.aes[0].cipher[i][j] == self.cipher[0][i][j])
+                s.add(self.aes[0].cipher[-1][i][j] == self.cipher[0][i][j])
 
         # We add all the assertions of the other system of equation
         for b in range(1, self.blocks):
             self.aes[b].s.reset()
             for i in range(4):
                 for j in range(4):
-                    s.add(self.aes[b].message[i][j] == self.message[b][i][j] ^ self.aes[b-1].cipher[i][j])
-                    s.add(self.aes[b].cipher[i][j] == self.cipher[b][i][j])
+                    s.add(self.aes[b].message[i][j] == self.message[b][i][j] ^ self.aes[b-1].cipher[-1][i][j])
+                    s.add(self.aes[b].cipher[-1][i][j] == self.cipher[b][i][j])
 
 class Aes_Cfb(Aes_Mode):
     def __init__(self, keylength, size_message):
@@ -176,14 +175,14 @@ class Aes_Cfb(Aes_Mode):
         for i in range(4):
             for j in range(4):
                 s.add(self.aes[0].message[i][j] == self.iv[i][j])
-                s.add(self.cipher[0][i][j] == self.aes[0].cipher[i][j] ^ self.message[0][i][j])
+                s.add(self.cipher[0][i][j] == self.aes[0].cipher[-1][i][j] ^ self.message[0][i][j])
 
         # We add all the assertions of the other system of equation
         for b in range(1, self.blocks):
             self.aes[b].s.reset()
             for i in range(4):
                 for j in range(4):
-                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[i][j] ^ self.message[b][i][j])
+                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[-1][i][j] ^ self.message[b][i][j])
                     s.add(self.aes[b].message[i][j] == self.cipher[b-1][i][j])
 
 class Aes_Ctr(Aes_Mode):
@@ -211,7 +210,7 @@ class Aes_Ctr(Aes_Mode):
                     s.add(self.aes[b].message[i][j] == simplify(Extract(indice_hi, indice_low, iv_tmp)))
 
                     # Adding the xor between plain and encrypted iv in the solver
-                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[i][j] ^ self.message[b][i][j])
+                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[-1][i][j] ^ self.message[b][i][j])
 
 class Aes_Ofb(Aes_Mode):
     def __init__(self, keylength, size_message):
@@ -221,13 +220,13 @@ class Aes_Ofb(Aes_Mode):
         for i in range(4):
             for j in range(4):
                 s.add(self.aes[0].message[i][j] == self.iv[i][j])
-                s.add(self.cipher[0][i][j] == self.aes[0].cipher[i][j] ^ self.message[0][i][j])
+                s.add(self.cipher[0][i][j] == self.aes[0].cipher[-1][i][j] ^ self.message[0][i][j])
 
         # We add all the assertions of the other system of equation
         for b in range(1, self.blocks):
             self.aes[b].s.reset()
             for i in range(4):
                 for j in range(4):
-                    s.add(self.aes[b].message[i][j] == self.aes[b-1].cipher[i][j])
-                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[i][j] ^ self.message[b][i][j])
+                    s.add(self.aes[b].message[i][j] == self.aes[b-1].cipher[-1][i][j])
+                    s.add(self.cipher[b][i][j] == self.aes[b].cipher[-1][i][j] ^ self.message[b][i][j])
 

@@ -5,8 +5,6 @@ class Aes():
     masterkey = [0] * 8 
 
     def __init__(self, keylength, prefix="message"):
-        self.cipher = [0] * 14
-        self.keyRounds = [0] * 14
         self.keylength = keylength
   
         # Number of column  (Aes128->4, AES192->6, AES256->8)
@@ -14,6 +12,8 @@ class Aes():
 
         # Nomber of rounds
         self.Nr = self.Nk+6
+        
+        self.keyRounds = [0] * (self.Nr + 1)
 
         # Init with column order
         for j in range(self.Nk):
@@ -22,13 +22,20 @@ class Aes():
         self.message = [0] * 4
         for j in range(4):
             self.message[j] = BitVecs([prefix+"_%02d_%02d" %(j, i) for i in range(4)], 8)
-       
-        self.s = Aes.resetSolver(self)
-       
-        for i in range(14):
-            # Init cipher with messages to have the same type
-            self.cipher[i] = self.message
         
+        self.cipher = [0] * (self.Nr + 1)
+        for i in range(self.Nr+1):
+            self.cipher[i] = [0] * 4
+            for j in range(4):
+                self.cipher[i][j] = [0] * 4
+                for k in range(4):
+                    if(i==0):
+                        self.cipher[i][j][k] = self.message[j][k]
+                    else:
+                        self.cipher[i][j][k] = 0
+
+        self.s = Aes.resetSolver(self)
+      
         # Init keyRounds
         self.keyRounds = self.expandKey()
 
@@ -87,12 +94,18 @@ class Aes():
         # 3 = 2 ^ 1 so x*3 = x*2 ^ x
         return self.mult2(x) ^ x
 
+    def subByte_f(self, lap):
+        for i in range(4):
+            tmp = [self.subByte(self.cipher[lap-1][k][i]) for k in range(4)]
+            for j in range(4):
+                self.cipher[lap][j][i] = tmp[(j+i)%4]
+
     def mixColumn(self, column):
         matrix = [[self.mult2, self.mult3, self.mult1, self.mult1], 
                   [self.mult1, self.mult2, self.mult3, self.mult1], 
                   [self.mult1, self.mult1, self.mult2, self.mult3], 
                   [self.mult3, self.mult1, self.mult1, self.mult2]]
-
+        
         a = [0] * len(column)
         for i in range(4):
             for j in range(4):
@@ -113,10 +126,11 @@ class Aes():
         self.cipher[0] = self.addRoundKey(0)
         for l in range(1, self.Nr):
             # SubByte and shiftRow line order
-            for i in range(4):
-                tmp = [self.subByte(self.cipher[l-1][k][i]) for k in range(4)]
-                for j in range(4):
-                    self.cipher[l][j][i] = tmp[(j+i)%4]
+            self.subByte_f(l)
+            #for i in range(4):
+            #    tmp = [self.subByte(self.cipher[l-1][k][i]) for k in range(4)]
+            #    for j in range(4):
+            #        self.cipher[l][j][i] = tmp[(j+i)%4]
 
             # MixColumn column order
             for i in range(4):
@@ -160,7 +174,7 @@ class Aes():
         #Column order 
         for i in range(0, self.Nk):
             for j in range(0, 4):
-                self.addPartialKey(i//4, i, j, int(key[2*(i*4+j):2*(i*4+j+1)], 16))
+                self.addPartialKey(i//4, i%4, j, int(key[2*(i*4+j):2*(i*4+j+1)], 16))
         self.addCipher(cipher)
         sat_resp = self.s.check()
         solution = []
