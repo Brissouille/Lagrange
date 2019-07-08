@@ -94,12 +94,18 @@ class Aes():
         # 3 = 2 ^ 1 so x*3 = x*2 ^ x
         return self.mult2(x) ^ x
 
+    def subByte_f(self, lap):
+        for i in range(4):
+            tmp = [self.subByte(self.cipher[lap-1][k][i]) for k in range(4)]
+            for j in range(4):
+                self.cipher[lap][j][i] = tmp[(j+i)%4]
+
     def mixColumn(self, column):
         matrix = [[self.mult2, self.mult3, self.mult1, self.mult1], 
                   [self.mult1, self.mult2, self.mult3, self.mult1], 
                   [self.mult1, self.mult1, self.mult2, self.mult3], 
                   [self.mult3, self.mult1, self.mult1, self.mult2]]
-
+        
         a = [0] * len(column)
         for i in range(4):
             for j in range(4):
@@ -120,10 +126,11 @@ class Aes():
         self.cipher[0] = self.addRoundKey(0)
         for l in range(1, self.Nr):
             # SubByte and shiftRow line order
-            for i in range(4):
-                tmp = [self.subByte(self.cipher[l-1][k][i]) for k in range(4)]
-                for j in range(4):
-                    self.cipher[l][j][i] = tmp[(j+i)%4]
+            self.subByte_f(l)
+            #for i in range(4):
+            #    tmp = [self.subByte(self.cipher[l-1][k][i]) for k in range(4)]
+            #    for j in range(4):
+            #        self.cipher[l][j][i] = tmp[(j+i)%4]
 
             # MixColumn column order
             for i in range(4):
