@@ -116,16 +116,13 @@ class Aes():
 
     def addRoundKey(self, lap):
         key = self.keyRounds[lap]
-        cipher = [0] * 4
         # column order
         for i in range(4):
-            cipher[i] = [0] * 4
             for j in range(4):
-                cipher[i][j] = self.cipher[lap][i][j] ^ key[i][j]
-        return cipher
+                self.cipher[lap][i][j] = self.cipher[lap][i][j] ^ key[i][j]
     
     def encryption(self):
-        self.cipher[0] = self.addRoundKey(0)
+        self.addRoundKey(0)
         for l in range(1, self.Nr):
             # SubByte and shiftRow line order
             self.subByte(l)
@@ -134,7 +131,7 @@ class Aes():
             self.mixColumn(l)
             
             # Adding the key
-            self.cipher[l] = self.addRoundKey(l)
+            self.addRoundKey(l)
         
         # SubByte and shiftRow of last roudns - line order 
         for i in range(4):
@@ -142,7 +139,7 @@ class Aes():
             for j in range(4):
                 self.cipher[self.Nr][j][i] = tmp[(j+i)%4]
 
-        self.cipher[self.Nr] = self.addRoundKey(self.Nr)
+        self.addRoundKey(self.Nr)
     
     def encrypt(self, key, plain):
         Aes.reset(self)
