@@ -64,10 +64,10 @@ class Aes():
                     tmp_key[i][j] = 0 
                     # the first column is treated differently
                     if (i%self.Nk) == 0:
-                        tmp_key[i][j] = tmp_key[i-self.Nk][j] ^ self.subByte(tmp_key[i-1][(j+1)%4]) ^ tmp_rc[j]
+                        tmp_key[i][j] = tmp_key[i-self.Nk][j] ^ self.subByte_f(tmp_key[i-1][(j+1)%4]) ^ tmp_rc[j]
                     # for Aes256
                     elif self.Nk>6 and (i%self.Nk)==4:
-                        tmp_key[i][j] = tmp_key[i-self.Nk][j] ^ self.subByte(tmp_key[(i-1)][j]) 
+                        tmp_key[i][j] = tmp_key[i-self.Nk][j] ^ self.subByte_f(tmp_key[(i-1)][j]) 
                     else:
                         tmp_key[i][j] = tmp_key[i-self.Nk][j] ^ tmp_key[i-1][j]
        
@@ -94,9 +94,9 @@ class Aes():
         # 3 = 2 ^ 1 so x*3 = x*2 ^ x
         return self.mult2(x) ^ x
 
-    def subByte_f(self, lap):
+    def subByte(self, lap):
         for i in range(4):
-            tmp = [self.subByte(self.cipher[lap-1][k][i]) for k in range(4)]
+            tmp = [self.subByte_f(self.cipher[lap-1][k][i]) for k in range(4)]
             for j in range(4):
                 self.cipher[lap][j][i] = tmp[(j+i)%4]
 
@@ -128,7 +128,7 @@ class Aes():
         self.cipher[0] = self.addRoundKey(0)
         for l in range(1, self.Nr):
             # SubByte and shiftRow line order
-            self.subByte_f(l)
+            self.subByte(l)
 
             # MixColumn column order
             self.mixColumn(l)
@@ -138,7 +138,7 @@ class Aes():
         
         # SubByte and shiftRow of last roudns - line order 
         for i in range(4):
-            tmp = [self.subByte(self.cipher[self.Nr-1][k][i]) for k in range(4)]
+            tmp = [self.subByte_f(self.cipher[self.Nr-1][k][i]) for k in range(4)]
             for j in range(4):
                 self.cipher[self.Nr][j][i] = tmp[(j+i)%4]
 
@@ -213,7 +213,7 @@ class Aes():
         s = Solver()
         # Init solver with Sboxes
         for i in range(256):
-            s.add(self.subByte(i)==self.sbox_tab[i])
+            s.add(self.subByte_f(i)==self.sbox_tab[i])
         return s
 
     def check(self):
@@ -252,7 +252,7 @@ class Aes():
 
         return string
 
-    subByte = Function('subByte', BitVecSort(8), BitVecSort(8))
+    subByte_f = Function('subByte_f', BitVecSort(8), BitVecSort(8))
 
     sbox_tab =  \
    [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67,
