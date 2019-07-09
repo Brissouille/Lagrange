@@ -134,15 +134,13 @@ class Aes():
             self.addRoundKey(l)
         
         # SubByte and shiftRow of last roudns - line order 
-        for i in range(4):
-            tmp = [self.subByte_f(self.cipher[self.Nr-1][k][i]) for k in range(4)]
-            for j in range(4):
-                self.cipher[self.Nr][j][i] = tmp[(j+i)%4]
+        self.subByte(self.Nr)
 
+        # Adding last round key
         self.addRoundKey(self.Nr)
     
     def encrypt(self, key, plain):
-        Aes.reset(self)
+        #Aes.reset(self)
         #Column order 
         for i in range(0, self.Nk):
             for j in range(0,4):
