@@ -1,4 +1,5 @@
 from z3 import *
+from copy import deepcopy
 
 class Aes():
    
@@ -95,8 +96,9 @@ class Aes():
         return self.mult2(x) ^ x
 
     def subByte(self, lap):
+        # line order
         for i in range(4):
-            tmp = [self.subByte_f(self.cipher[lap-1][k][i]) for k in range(4)]
+            tmp = [self.subByte_f(self.cipher[lap][k][i]) for k in range(4)]
             for j in range(4):
                 self.cipher[lap][j][i] = tmp[(j+i)%4]
 
@@ -124,6 +126,9 @@ class Aes():
     def encryption(self):
         self.addRoundKey(0)
         for l in range(1, self.Nr):
+            # copy of the previous state for the next round
+            self.cipher[l] = deepcopy(self.cipher[l-1])
+    
             # SubByte and shiftRow line order
             self.subByte(l)
 
@@ -133,16 +138,17 @@ class Aes():
             # Adding the key
             self.addRoundKey(l)
         
+        # copy of the previous state for the next round
+        self.cipher[self.Nr] = deepcopy(self.cipher[self.Nr-1])
+        
         # SubByte and shiftRow of last roudns - line order 
-        for i in range(4):
-            tmp = [self.subByte_f(self.cipher[self.Nr-1][k][i]) for k in range(4)]
-            for j in range(4):
-                self.cipher[self.Nr][j][i] = tmp[(j+i)%4]
+        self.subByte(self.Nr)
 
+        # Adding last round key
         self.addRoundKey(self.Nr)
     
     def encrypt(self, key, plain):
-        Aes.reset(self)
+        #Aes.reset(self)
         #Column order 
         for i in range(0, self.Nk):
             for j in range(0,4):
