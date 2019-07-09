@@ -100,17 +100,19 @@ class Aes():
             for j in range(4):
                 self.cipher[lap][j][i] = tmp[(j+i)%4]
 
-    def mixColumn(self, column):
+    def mixColumn(self, l):
         matrix = [[self.mult2, self.mult3, self.mult1, self.mult1], 
                   [self.mult1, self.mult2, self.mult3, self.mult1], 
                   [self.mult1, self.mult1, self.mult2, self.mult3], 
                   [self.mult3, self.mult1, self.mult1, self.mult2]]
         
-        a = [0] * len(column)
-        for i in range(4):
-            for j in range(4):
-                a[i] = a[i] ^ matrix[i][j](column[j])
-        return a
+        for c in range(4):
+            column = self.cipher[l][c]
+            a = [0] * len(column)
+            for i in range(4):
+                for j in range(4):
+                    a[i] = a[i] ^ matrix[i][j](column[j])
+            self.cipher[l][c] = a
 
     def addRoundKey(self, lap):
         key = self.keyRounds[lap]
@@ -127,14 +129,9 @@ class Aes():
         for l in range(1, self.Nr):
             # SubByte and shiftRow line order
             self.subByte_f(l)
-            #for i in range(4):
-            #    tmp = [self.subByte(self.cipher[l-1][k][i]) for k in range(4)]
-            #    for j in range(4):
-            #        self.cipher[l][j][i] = tmp[(j+i)%4]
 
             # MixColumn column order
-            for i in range(4):
-               self.cipher[l][i] = self.mixColumn(self.cipher[l][i])
+            self.mixColumn(l)
             
             # Adding the key
             self.cipher[l] = self.addRoundKey(l)
