@@ -17,8 +17,8 @@ class DFA():
         self.s = DFA.resetSolver(self)
 
     def insert(self, lap, byte_attacked, byte_value):
-        aes1 = Aes(128, "")
-        aes2 = Aes(128, "")
+        aes1 = Aes(128, "m_%02d_1" %(len(self.aes)))
+        aes2 = Aes(128, "m_%02d_2" %(len(self.aes)))
         self.aes.append([aes1, aes2])
 
         A = [[BitVec("A_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
@@ -38,10 +38,10 @@ class DFA():
         # Insert fault on byte previous MixColumn
         state2 = aes2.cipher[lap]
         self.fault = BitVec("fault", 8)
-        state2[byte_attacked//4][(byte_attacked)%4] = self.fault
-        #state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ self.fault 
+        #state2[byte_attacked//4][(byte_attacked)%4] = self.fault
+        state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ self.fault 
        
-        # Perform the rounds 9  with the fault
+        # Perform the rounds 9 with the fault
         for l in range(lap, aes2.Nr):
             aes2.mixColumn(l)
             aes2.addRoundKey(l)
