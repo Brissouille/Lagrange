@@ -8,11 +8,8 @@ class DFA():
         self.s = Solver()
     
     def resetSolver(self):
-        self.s.reset()
-        for aes in self.aes:
-            # reset safe and faulted aes
-            for i in aes:
-                i.reset()
+        self.s = Solver()
+        self.aes = []
         return self.s
 
     def reset(self):
@@ -63,8 +60,6 @@ class DFA():
             aes1, aes2 = aes
             aes1.addCipher(safe_m)
             aes2.addCipher(faulted_m)
-            print(aes2.cipher[-1][0][0])
-            input()
             self.s.add(aes1.s.assertions())
             self.s.add(aes2.s.assertions())
         
@@ -72,7 +67,7 @@ class DFA():
         sat_status = self.s.check()
         if(sat_status == sat):
             print("Solution")
-            #print(self.s.model().evaluate(aes1.keyRounds[10][0][0]))
+            print(self.s.model().evaluate(aes1.keyRounds[10][0][0]))
         else:
             print("No Solution")
 
