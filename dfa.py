@@ -54,20 +54,25 @@ class DFA():
         #self.s.add(fault == byte_value)
         aes2.s.add(fault == byte_value)
 
-    def exploit(self, safe_m, faulted_m):
+    def exploit(self, list_exploit):
         # We agregate the solver into one solver
-        for aes in self.aes:
+        for aes, output in zip(self.aes, list_exploit):
             aes1, aes2 = aes
+            safe_m, faulted_m = output
             aes1.addCipher(safe_m)
             aes2.addCipher(faulted_m)
             self.s.add(aes1.s.assertions())
             self.s.add(aes2.s.assertions())
         
-        # Resolution of the equation
-        sat_status = self.s.check()
-        if(sat_status == sat):
-            print("Solution")
-            print(self.s.model().evaluate(aes1.keyRounds[10][0][0]))
-        else:
-            print("No Solution")
+        sat_status = sat
+        while sat_status == sat:
+            # Resolution of the equation
+            sat_status = self.s.check()
+            if(sat_status == sat):
+                print("Solution")
+                solution = self.s.model().evaluate(aes1.keyRounds[10][0][0])
+                print(solution)
+                self.s.add(aes1.keyRounds[10][0][0] != int(str(solution)))
+            else:
+                print("No Solution")
 
