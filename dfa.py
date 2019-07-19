@@ -35,8 +35,9 @@ class DFA():
         aes2.subByte(lap)
 
         # Insert fault on byte previous MixColumn
+        # Fault depend on the aes list
         state2 = aes2.cipher[lap]
-        fault = BitVec("fault", 8)
+        fault = BitVec("fault_%02d" %(len(self.aes)), 8)
         #state2[byte_attacked//4][(byte_attacked)%4] = fault
         state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault 
         
@@ -58,7 +59,7 @@ class DFA():
         # We agregate the solver into one solver
         for aes, output in zip(self.aes, list_exploit):
             aes1, aes2 = aes
-            safe_m, faulted_m = output
+            faulted_m, safe_m = output
             aes1.addCipher(safe_m)
             aes2.addCipher(faulted_m)
             self.s.add(aes1.s.assertions())
