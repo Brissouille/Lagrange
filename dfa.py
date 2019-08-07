@@ -19,6 +19,7 @@ class DFA():
         aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
         aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
 
+        # Creation of this tempory values in order to retrieve K10 byte per byte
         A = [[BitVec("A_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
         K9 = [[BitVec("K9_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
         K10 = [[BitVec("K10_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
@@ -65,9 +66,10 @@ class DFA():
 
         # Init the fault
         aes2.s.add(fault == byte_value)
+        aes2.s.add(fault != 0x00)
         self.aes.append([aes1, aes2])
 
-    def exploit(self, list_exploit):
+    def exploit(self, list_exploit, K10_b):
         # We agregate the solver into one solver
         for aes, output in zip(self.aes, list_exploit):
             aes1, aes2 = aes
@@ -83,9 +85,9 @@ class DFA():
             sat_status = self.s.check()
             if(sat_status == sat):
                 print("Solution")
-                solution = self.s.model().evaluate(aes1.keyRounds[10][0][0])
+                solution = self.s.model().evaluate(aes1.keyRounds[10][K10_b[0]//4][K10_b[0]%4])
                 print(solution)
-                self.s.add(aes1.keyRounds[10][0][0] != int(str(solution)))
+                self.s.add(aes1.keyRounds[10][K10_b[0]//4][K10_b[0]%4] != int(str(solution)))
             else:
                 print("No Solution")
 
