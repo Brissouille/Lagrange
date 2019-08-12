@@ -14,8 +14,6 @@ class DFA():
 
     def reset(self):
         self.s = DFA.resetSolver(self)
-
-    def insert(self, lap, byte_attacked, byte_value):
         aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
         aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
 
@@ -43,10 +41,8 @@ class DFA():
         # Fault depend on the aes list
         state2 = aes2.cipher[lap]
         fault = BitVec("fault_%02d" %(len(self.aes)), 8)
-        
-        #state2[byte_attacked//4][(byte_attacked)%4] = fault
         state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault 
-       
+      
         # Perform the rounds 9 with the fault
         for l in range(lap, aes2.Nr):
             aes2.mixColumn(l)
@@ -64,7 +60,6 @@ class DFA():
         aes1.addRoundKey(aes1.Nr)
 
         # Init the fault
-        aes2.s.add(fault == byte_value)
         self.aes.append([aes1, aes2])
 
     def exploit(self, list_exploit):
@@ -83,9 +78,9 @@ class DFA():
             sat_status = self.s.check()
             if(sat_status == sat):
                 print("Solution")
-                solution = self.s.model().evaluate(aes1.keyRounds[10][0][0])
-                print(solution)
-                self.s.add(aes1.keyRounds[10][0][0] != int(str(solution)))
+                solution = int(str(self.s.model().evaluate(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4])))
+                print("{:02x}".format(solution))
+                self.s.add(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4] != solution)
             else:
                 print("No Solution")
 
