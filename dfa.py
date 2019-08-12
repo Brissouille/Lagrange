@@ -16,6 +16,7 @@ class DFA():
         self.s = DFA.resetSolver(self)
 
     def insert(self, lap, byte_attacked):
+        self.target_byte = byte_attacked
         aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
         aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
 
@@ -81,9 +82,9 @@ class DFA():
             sat_status = self.s.check()
             if(sat_status == sat):
                 print("Solution")
-                solution = int(str(self.s.model().evaluate(aes1.keyRounds[10][0][0])))
+                solution = int(str(self.s.model().evaluate(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4])))
                 print("{:02x}".format(solution))
-                self.s.add(aes1.keyRounds[10][0][0] != solution)
+                self.s.add(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4] != solution)
             else:
                 print("No Solution")
 
