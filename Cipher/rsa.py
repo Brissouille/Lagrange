@@ -38,21 +38,17 @@ class Rsa():
             multiply = If(self.d[i]==0x01, self.message, 1)
             self.cipher = (self.cipher * multiply) % self.n
 
-    def encrypt(self, private_exponent, modulus, message):
-        self.addPrivateExponent(private_exponent)
+    def encrypt(self, public_exponent, modulus, message):
+        self.addPublicExponent(public_exponent)
         self.addMessage(message)
         self.addModulus(modulus)
-        print(self.s)
-        print(self.s.check())
+        self.s.check()
         print(self.s.model().evaluate(self.cipher))
    
     def addPrivateExponent(self, d):
         # d is in hexadecimal format
-        d_bin = "{:0%db}" % (self.size_module)
-        d_bin = d_bin.format(int(d,16))
-        print(d_bin)
-        for i in range(0, self.size_module):
-            self.s.add(self.d[i]== d_bin[i])
+        for i in range(0, self.size_module, 2):
+            self.s.add(self.d[i]== d[i:i+2])
 
     def addPublicExponent(self, e):
         # e is in hexadecimal format
