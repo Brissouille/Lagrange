@@ -3,17 +3,25 @@ from z3 import *
 from copy import deepcopy
 
 class DFA():
+    """ DFA class which performed a Differential Fault Analysis """
     def __init__(self):
+        """ Initialise the attribute """
         self.aes = []
         self.s = Solver()
     
     def resetSolver(self):
+        """ Reset Solver and clean list of aes """
         self.s = Solver()
         self.aes = []
         return self.s
 
     def reset(self):
+        """ Reset the solver of the DFA """
         self.s = DFA.resetSolver(self)
+
+    def insert(self, lap, byte_attacked):
+        """ Modelize a fault on 1 byte """
+        self.target_byte = byte_attacked
         aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
         aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
 
@@ -22,7 +30,7 @@ class DFA():
         K10 = [[BitVec("K10_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
 
         # We take the previous state
-        aes2.cipher[lap] = deepcopy(aes2.cipher[lap-1])
+        #aes2.cipher[lap] = deepcopy(aes2.cipher[lap-1])
         
         aes1.cipher[lap] = deepcopy(A)
         aes2.cipher[lap] = deepcopy(A)
@@ -33,20 +41,26 @@ class DFA():
         aes1.keyRounds[9] = deepcopy(K9)
         aes1.keyRounds[10] = deepcopy(K10)
 
-        # Perform subByte 
-        aes1.subByte(lap)
-        aes2.subByte(lap)
-
-        # Insert fault on byte previous MixColumn
         # Fault depend on the aes list
-        state2 = aes2.cipher[lap]
-        fault = BitVec("fault_%02d" %(len(self.aes)), 8)
-        state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault 
-      
-        # Perform the rounds 9 with the fault
+        # Different faults in fucntion of the timming
+        fault = [BitVec("fault%02d_%02d" %(i, len(self.aes)), 8) for i in range(4)]
+        self.s.add((fault[1]!=0x00) != (fault[2]!=0x00))
+        self.s.add(fault[1] != fault[2])
+        
+        # Perform the rounds 9 with the fault -> for is overrated
         for l in range(lap, aes2.Nr):
+            aes2.subByte(lap)
+            state2 = aes2.cipher[lap] 
+            state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault[1]
+            
             aes2.mixColumn(l)
+            state2 = aes2.cipher[lap] 
+            state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault[2]
+            
             aes2.addRoundKey(l)
+            
+            # Aes1 clean
+            aes1.subByte(lap)
             aes1.mixColumn(l)
             aes1.addRoundKey(l)
         
@@ -63,6 +77,7 @@ class DFA():
         self.aes.append([aes1, aes2])
 
     def exploit(self, list_exploit):
+        """ Add the couple of cipher and faulted cipher in the solver and check the solutions """
         # We agregate the solver into one solver
         for aes, output in zip(self.aes, list_exploit):
             aes1, aes2 = aes
@@ -73,14 +88,13 @@ class DFA():
             self.s.add(aes2.s.assertions())
         
         sat_status = sat
-        while sat_status == sat:
-            # Resolution of the equation
-            sat_status = self.s.check()
-            if(sat_status == sat):
-                print("Solution")
-                solution = int(str(self.s.model().evaluate(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4])))
-                print("{:02x}".format(solution))
-                self.s.add(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4] != solution)
-            else:
-                print("No Solution")
+        # Resolution of the equation
+        sat_status = self.s.check()
+        if(sat_status == sat):
+            print("Solution")
+            solution = int(str(self.s.model().evaluate(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4])))
+            print("{:02x}".format(solution))
+            
+        else:
+            print("No Solution")
 

@@ -1,5 +1,8 @@
 from z3 import BitVecVal, RotateRight, LShR
 
+"""
+    Define the functions for the different sha (224, 256, 384, 512)
+"""
 def Sigma_256_0(self, x):
     return RotateRight(x, 2) ^ RotateRight(x, 13) ^ RotateRight(x, 22)
 
@@ -24,14 +27,22 @@ def sigma_512_0(self, x):
 def sigma_512_1(self, x):
     return RotateRight(x, 19) ^ RotateRight(x, 61) ^ LShR(x, 6) 
 
-
+"""
+    Define the dictionnaries which contain the sha parameters
+"""
 sha224_param = {'Mblock':512, 'nb_rounds':64, 'maxlength':64, "Sigma_0":Sigma_256_0,  "Sigma_1":Sigma_256_1, "sigma_0":sigma_256_0, "sigma_1":sigma_256_1}
 sha256_param = {'Mblock':512, 'nb_rounds':64, 'maxlength':64, "Sigma_0":Sigma_256_0,  "Sigma_1":Sigma_256_1, "sigma_0":sigma_256_0, "sigma_1":sigma_256_1}
 sha384_param = {'Mblock':1024, 'nb_rounds':80, 'maxlength':128, "Sigma_0":Sigma_512_0,  "Sigma_1":Sigma_512_1, "sigma_0":sigma_512_0, "sigma_1":sigma_512_1}
 sha512_param = {'Mblock':1024, 'nb_rounds':80, 'maxlength':128, "Sigma_0":Sigma_512_0,  "Sigma_1":Sigma_512_1, "sigma_0":sigma_512_0, "sigma_1":sigma_512_1}
 
+"""
+    Define the dictionnnary which contains the sha dictionnary parameter
+"""
 sha_param = {224:sha224_param, 256:sha256_param, 384:sha384_param, 512:sha512_param}
 
+"""
+    Constant variable and its dictionnary
+"""
 K256 = [
 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,

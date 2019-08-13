@@ -2,10 +2,11 @@ from z3 import *
 from copy import deepcopy
 
 class Aes():
-   
+    """ Class which implements an AES compliance with FIPS 197 """   
     masterkey = [0] * 8 
 
     def __init__(self, keylength, prefix="message"):
+        """ Init the symbolc variable """
         self.keylength = keylength
   
         # Number of column  (Aes128->4, AES192->6, AES256->8)
@@ -44,6 +45,7 @@ class Aes():
         self.encryption()
 
     def expandKey(self):
+        """ Perfoms the keyschedule of the AES with symbolic variables """
         rc = [ 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36, 0x6C, 0xD8, 0xAB, 0x4D, 0x9A, 0x2F, 0x5E, 0xBC, 0x63, 0xC6, 0x97, 0x35, 0x6A, 0xD4, 0xB3, 0x7D, 0xFA, 0xEF]
 
         tmp_key = [0] * (self.Nr+1)*4
@@ -83,19 +85,20 @@ class Aes():
         return keyRounds
    
     def mult1(self, x):
-        #Just for coherence
+        """ Just for coherence """
         return x
 
     def mult2(self, x):
-        #  mult in GF(2^8)
+        """  multiplcation by 2 in GF(2^8) """
         # %256 beacause BitVecVal(128, 8) == -1
         return ((x<<1)%256) ^ (0x1b * ((x>>7) & 1))
     
     def mult3(self, x):
-        # 3 = 2 ^ 1 so x*3 = x*2 ^ x
+        """ mutliplication by 3 (= 2 ^ 1) so x*3 = x*2 ^ x """
         return self.mult2(x) ^ x
 
     def subByte(self, lap):
+        """ Perfomes a subByte """
         # line order
         for i in range(4):
             tmp = [self.subByte_f(self.cipher[lap][k][i]) for k in range(4)]
@@ -103,6 +106,7 @@ class Aes():
                 self.cipher[lap][j][i] = tmp[(j+i)%4]
 
     def mixColumn(self, l):
+        """ Perfomes a mixColumn """
         matrix = [[self.mult2, self.mult3, self.mult1, self.mult1], 
                   [self.mult1, self.mult2, self.mult3, self.mult1], 
                   [self.mult1, self.mult1, self.mult2, self.mult3], 
@@ -117,6 +121,7 @@ class Aes():
             self.cipher[l][c] = a
 
     def addRoundKey(self, lap):
+        """ Perform a Xor with the round's key and the state """
         key = self.keyRounds[lap]
         # column order
         for i in range(4):
@@ -124,6 +129,7 @@ class Aes():
                 self.cipher[lap][i][j] = self.cipher[lap][i][j] ^ key[i][j]
     
     def encryption(self):
+        """ Performs an encryption """
         self.addRoundKey(0)
         for l in range(1, self.Nr):
             # copy of the previous state for the next round
@@ -148,6 +154,7 @@ class Aes():
         self.addRoundKey(self.Nr)
     
     def encrypt(self, key, plain):
+        """ Computes the cipher in resolving the solver """
         #Aes.reset(self)
         #Column order 
         for i in range(0, self.Nk):
@@ -170,6 +177,7 @@ class Aes():
         return solution
     
     def decrypt(self, key, cipher):
+        """ Computes the plain in resolving the solver """
         Aes.resetSolver(self)
         #Column order 
         for i in range(0, self.Nk):
@@ -192,6 +200,7 @@ class Aes():
         return solution
 
     def addCipher(self, value):
+        """ Addding the cipher to solver """
         # Column order to insert
         for i in range(4):
             for j in range(4):
@@ -199,6 +208,7 @@ class Aes():
                 self.s.add(self.cipher[self.Nr][i][j]==int(value[2*(i*4+j):2*(i*4+j+1)],16))
 
     def addMessage(self, value):
+        """ Addding the plain to solver """
         # Column order to insert
         for i in range(4):
             for j in range(4):
@@ -206,13 +216,16 @@ class Aes():
                 self.s.add(self.message[i][j]==int(value[2*(i*4+j):2*(i*4+j+1)],16))
 
     def addPartialKey(self, lap, column, line, value):
+        """ Adding a byte key in function round, column and line """
         self.s.add(self.keyRounds[lap][column][line]==value)
 
     def reset(self):
+         """ reset the solver of the class """
         self.s.reset()
         self.s = Aes.resetSolver(self)
 
     def resetSolver(self):
+        """ Create a Solver and init with the sbox value """
         s = Solver()
         # Init solver with Sboxes
         for i in range(256):
@@ -220,6 +233,7 @@ class Aes():
         return s
 
     def check(self):
+        """ resolve the system of equation and explicit master key """
         sat_resp = self.s.check()
         if (sat_resp==sat):
             #print("Solution found")
@@ -236,6 +250,7 @@ class Aes():
                     print(self.keyRounds[l][i][j])
   
     def getKeyRound(self, lap):
+        """ Return the master key in string type """
         string = ""
         sat_aes = self.s.check()
         for i in range(self.Nk):
@@ -254,6 +269,9 @@ class Aes():
                     string = string + "\n" + str(value)  + "\n"
 
         return string
+
+
+    """ Constants for the sbox variable and subbyte function """
 
     subByte_f = Function('subByte_f', BitVecSort(8), BitVecSort(8))
 
