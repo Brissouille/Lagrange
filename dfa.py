@@ -14,6 +14,9 @@ class DFA():
 
     def reset(self):
         self.s = DFA.resetSolver(self)
+
+    def insert(self, lap, byte_attacked):
+        self.target_byte = byte_attacked
         aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
         aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
 
