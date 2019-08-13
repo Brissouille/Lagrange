@@ -85,3 +85,9 @@ class Rsa():
         # message is in hexadecimal format
         self.s.add(self.cipher == int(cipher, 16))
 
+    def resetSolver(self):
+        self.s.reset()
+    
+    def reset(self):
+        self.s.reset()
+        self.s = Rsa.resetSolver(self)
