@@ -4,7 +4,6 @@ from .constant import Ksha, Hsha, sha_param
 class Sha():
     message = 0
     def __init__(self, sha_type):
-      
         self.sha_type = sha_type
         self.hash_param = sha_param[sha_type]
 
@@ -58,6 +57,18 @@ class Sha():
         A = T1 + T2
         dct = {'A':A, 'B':B, 'C':C, 'D':D, 'E':E, 'F':F, 'G':G, 'H':H}
         return dct 
+
+    def preimage(self, round_attacked, hash_value):
+        Sha.reset(self)
+        i = 0
+        size_word = self.hash_param['Mblock']//(64) 
+        for key, value in self.state[round_attacked].items():
+            self.s.add(self.state[round_attacked][key] == int(hash_value[i*size_word:(i+1)*size_word], 16))
+            i = i + 1
+        if(self.s.check()==sat):
+            print("Pass")
+        else:
+            print("No Solution")
 
     def digest(self, message):
         self.s.reset()
