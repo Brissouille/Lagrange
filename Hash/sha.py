@@ -38,6 +38,7 @@ class Sha():
             self.state[t+1] = self.compression(t, **self.state[t])
 
         # Last operation for the sha
+        # Be careful the order is not A, B, ..., H
         for key, value in self.state[nb_rounds].items():
             self.state[nb_rounds][key] = self.state[0][key] + value
 
@@ -62,15 +63,17 @@ class Sha():
         Sha.reset(self)
         i = 0
         size_word = self.hash_param['Mblock']//(64) 
-        for key, value in self.state[round_attacked].items():
+        for key, value in sorted(self.state[round_attacked].items()):
             self.s.add(self.state[round_attacked][key] == int(hash_value[i*size_word:(i+1)*size_word], 16))
             i = i + 1
+            
         if(self.s.check()==sat):
-            print("Pass")
+            for i in range(1, 256):
+                print(self.s.model().evaluate(self.message[i]))
         else:
             print("No Solution")
 
-    def digest(self, message):
+    def digest(self, message, round_attack=-1):
         self.s.reset()
         # A format string which keeps the zeros on the left and transforms message in binary
         forme = "{:0"+str(len(message)*4)+"b}"
@@ -94,7 +97,7 @@ class Sha():
             # to print in hex on 8 caracteres or 16 caracteres
             forme = "{:0"+str(self.hash_param['Mblock']//64)+"x}"
             size_hash = self.sha_type // (self.hash_param['Mblock'] // 16)
-            [print(forme.format(int(str(self.s.model().evaluate(self.state[-1][chr(i+0x41)])))), end='') for i in range(size_hash)] 
+            [print(forme.format(int(str(self.s.model().evaluate(self.state[round_attack][chr(i+0x41)])))), end='') for i in range(size_hash)] 
             print()
 
     def Ch(self, x, y, z):
