@@ -2,6 +2,7 @@ from z3 import *
 
 class Rsa():
     def __init__(self, size_module, prefix="message"):
+    """ Class which implements an RSA """   
         # private exponent
         self.d = []
         
@@ -33,6 +34,7 @@ class Rsa():
         self.s = Solver()
 
     def exponentiation(self):
+        """ Performs an encryption """
         self.cipher = 1
         for i in range(0, self.size_module):
             self.cipher = self.cipher * self.cipher
@@ -40,6 +42,7 @@ class Rsa():
             self.cipher = (self.cipher * multiply) % self.n
 
     def encrypt(self, public_exponent, modulus, message):
+        """ Computes the cipher in resolving the solver """
         self.addPublicExponent(public_exponent)
         self.addMessage(message)
         self.addModulus(modulus)
@@ -48,6 +51,7 @@ class Rsa():
         print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
    
     def decrypt(self, private_exponent, modulus, message):
+        """ Computes the plain in resolving the solver """
         self.addPrivateExponent(private_exponent)
         self.addCipher(message)
         self.addModulus(modulus)
@@ -56,38 +60,43 @@ class Rsa():
         print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
     
     def addPrivateExponent(self, d):
+        """ Addding the private exponent to solver """
         self.addExponent(d, 'd')
 
     def addPublicExponent(self, e):
+        """ Addding the public exponent to solver """
         self.addExponent(e, 'e')
 
     def addExponent(self, exponent, exp_attrib):
-        # e is in hexadecimal format
-        for i in range(0, self.size_module//8, 2):
-            # for each byte of the exponent
-            byte_exp = exponent[i:i+2]
-
-            # transform in bits
-            bin_exp = "{:08b}".format(int(byte_exp, 16))
-            for j in range(8):
-                exp_value = self.__getattribute__(exp_attrib)
-                self.s.add(exp_value[i*8+j] == bin_exp[j])
+        """ Addding the exponent to solver """
+        # e is in hexadecimal format but not zero complemented
+        forme = "{:0"+str(self.size_module)+"b}"
+        exponent = forme.format(int(exponent,16))
+        for i in range(len(exponent)):
+            exp_value = self.__getattribute__(exp_attrib)
+            self.s.add(exp_value[i] == exponent[i])
 
     def addModulus(self, module):
+        """ Addding the modulus to solver """
         # modulus is in hexadecimal format
         self.s.add(self.n == int(module, 16))
     
     def addMessage(self, message):
+        """ Addding the plaint to solver """
         # message is in hexadecimal format
         self.s.add(self.message == int(message, 16))
     
     def addCipher(self, message):
+        """ Addding the cipher to solver """
         # message is in hexadecimal format
         self.s.add(self.cipher == int(cipher, 16))
 
     def resetSolver(self):
+        """ Create a Solver and init with the sbox value """
         self.s.reset()
     
     def reset(self):
+        """ reset the solver of the class """
         self.s.reset()
         self.s = Rsa.resetSolver(self)
+
