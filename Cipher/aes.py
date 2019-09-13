@@ -220,7 +220,7 @@ class Aes():
         self.s.add(self.keyRounds[lap][column][line]==value)
 
     def reset(self):
-         """ reset the solver of the class """
+        """ reset the solver of the class """
         self.s.reset()
         self.s = Aes.resetSolver(self)
 
@@ -270,6 +270,9 @@ class Aes():
 
         return string
 
+    def insert_fault(self, lap, byte_attacked, fault):
+        state2 = self.cipher[lap] 
+        state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault
 
     """ Constants for the sbox variable and subbyte function """
 

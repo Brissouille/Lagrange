@@ -4,6 +4,7 @@ from copy import deepcopy
 
 class DFA():
     """ DFA class which performed a Differential Fault Analysis """
+
     def __init__(self):
         """ Initialise the attribute """
         self.aes = []
@@ -20,18 +21,29 @@ class DFA():
         self.s = DFA.resetSolver(self)
 
     def insert(self, lap, byte_attacked):
-        """ Modelize a fault on 1 byte """
+        """ Modelisation of a fault on 1 byte """
         self.target_byte = byte_attacked
         aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
         aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
 
-        A = [[BitVec("A_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
-        K9 = [[BitVec("K9_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
-        K10 = [[BitVec("K10_%02d_%02d" % (j,i), 8) for i in range(4)] for j in range(4)] 
-
-        # We take the previous state
-        #aes2.cipher[lap] = deepcopy(aes2.cipher[lap-1])
-        
+        A = []
+        K9 = []
+        K10 = []
+        for i in range(4):
+            A_tmp = []
+            K9_tmp = []
+            K10_tmp = []
+            for j in range(4):
+                A_tmp.append(BitVec("A_%02d_%02d" % (j,i), 8))
+                K9_tmp.append(BitVec("K9_%02d_%02d" % (j,i), 8)) 
+                K10_tmp.append(BitVec("K10_%02d_%02d" % (j,i), 8))
+            A.append(A_tmp)
+            K9.append(K9_tmp)
+            K10.append(K10_tmp)
+            
+        # Fault depend on the aes list
+        fault = BitVec("fault_%02d" %(len(self.aes)), 8)
+       
         aes1.cipher[lap] = deepcopy(A)
         aes2.cipher[lap] = deepcopy(A)
         
@@ -40,27 +52,27 @@ class DFA():
         
         aes1.keyRounds[9] = deepcopy(K9)
         aes1.keyRounds[10] = deepcopy(K10)
-
-        # Fault depend on the aes list
-        # Different faults in fucntion of the timming
-        fault = [BitVec("fault%02d_%02d" %(i, len(self.aes)), 8) for i in range(4)]
-        self.s.add((fault[1]!=0x00) != (fault[2]!=0x00))
-        self.s.add(fault[1] != fault[2])
         
-        # Perform the rounds 9 with the fault -> for is overrated
-        for l in range(lap, aes2.Nr):
-            aes2.subByte(lap)
-            state2 = aes2.cipher[lap] 
-            state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault[1]
+        aes2.subByte(lap)
+        aes2.insert_fault(lap, self.target_byte, fault) #-> TODO in aes.py
+        #state2 = aes2.cipher[lap] 
+        #state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault
             
+        aes2.mixColumn(lap)
+        aes2.addRoundKey(lap)
+
+        # Aes1 clean
+        aes1.subByte(lap)
+        aes1.mixColumn(lap)
+        aes1.addRoundKey(lap)
+        
+        # Finish the rounds of Aes
+        for l in range(lap+1, aes2.Nr):
+            aes2.subByte(l)
             aes2.mixColumn(l)
-            state2 = aes2.cipher[lap] 
-            state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault[2]
-            
             aes2.addRoundKey(l)
-            
-            # Aes1 clean
-            aes1.subByte(lap)
+
+            aes1.subByte(l)
             aes1.mixColumn(l)
             aes1.addRoundKey(l)
         
@@ -73,7 +85,7 @@ class DFA():
         aes1.subByte(aes1.Nr)
         aes1.addRoundKey(aes1.Nr)
 
-        # Init the fault
+        # Save the cipher and the faulted cipher
         self.aes.append([aes1, aes2])
 
     def exploit(self, list_exploit):
@@ -92,9 +104,12 @@ class DFA():
         sat_status = self.s.check()
         if(sat_status == sat):
             print("Solution")
-            solution = int(str(self.s.model().evaluate(aes1.keyRounds[10][self.target_byte//4][self.target_byte%4])))
-            print("{:02x}".format(solution))
+            # We retrieve 4 key bytes
+            # loop column order
+            for i in range(4):
+                solution = int(str(self.s.model().evaluate(aes1.keyRounds[10][i][(self.target_byte-i)%4])))
+                print("{:02x}".format(solution), end=" ")
+            print()
             
         else:
             print("No Solution")
-
