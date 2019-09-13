@@ -1,6 +1,7 @@
 from z3 import Solver
 
 class Model(type):
+    """ Meta class which allows to agregate the solvers of parent class """
     def __new__(cls, name, bases, dct):
         def _agregateSolver(self):
             self.s = Solver()
