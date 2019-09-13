@@ -2,7 +2,7 @@ from z3 import *
 
 class Rsa():
     def __init__(self, size_module, prefix="message"):
-    """ Class which implements an RSA """   
+        """ Class which implements an RSA """ 
         # private exponent
         self.d = []
         
@@ -86,7 +86,7 @@ class Rsa():
         # message is in hexadecimal format
         self.s.add(self.message == int(message, 16))
     
-    def addCipher(self, message):
+    def addCipher(self, cipher):
         """ Addding the cipher to solver """
         # message is in hexadecimal format
         self.s.add(self.cipher == int(cipher, 16))
@@ -94,6 +94,7 @@ class Rsa():
     def resetSolver(self):
         """ Create a Solver and init with the sbox value """
         self.s.reset()
+        return self.s
     
     def reset(self):
         """ reset the solver of the class """
