@@ -24,8 +24,9 @@ class Rsa():
        
         # Init variable
         self.message = Int("message")
-        self.phi_n = Int("phi_n")
-        self.n = Int("n")
+        self.p, self.q = Ints("p, q")
+        self.n = self.p * self.q
+        self.phi_n = (self.p-1) * (self.q-1)
         self.size_module = size_module
 
         # symbolic exponentiation with the previous variables
@@ -33,8 +34,11 @@ class Rsa():
 
         self.s = Solver()
 
+        self.reset()
+
+
     def exponentiation(self):
-        """ Performs an encryption """
+        """ Performs an exponentiation """
         self.cipher = 1
         for i in range(0, self.size_module):
             self.cipher = self.cipher * self.cipher
@@ -46,6 +50,8 @@ class Rsa():
         self.addPublicExponent(public_exponent)
         self.addMessage(message)
         self.addModulus(modulus)
+        print(self.s.assertions()[0])
+        input()
         self.s.check()
         forme = "{:0"+str(self.size_module//8)+"x}"
         print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
@@ -55,6 +61,8 @@ class Rsa():
         self.addPrivateExponent(private_exponent)
         self.addCipher(message)
         self.addModulus(modulus)
+        print(self.s.assertions()[0])
+        input()
         self.s.check()
         forme = "{:0"+str(self.size_module//8)+"x}"
         print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
@@ -94,10 +102,12 @@ class Rsa():
     def resetSolver(self):
         """ Create a Solver and init with the sbox value """
         self.s.reset()
+        e_int = BV2Int(Concat(self.e))
+        d_int = BV2Int(Concat(self.d))
+        self.s.add( e_int * d_int == 1 % (self.phi_n))
         return self.s
     
     def reset(self):
-        """ reset the solver of the class """
-        self.s.reset()
+        """ reset the solver for this class """
         self.s = Rsa.resetSolver(self)
 
