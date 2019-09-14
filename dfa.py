@@ -4,7 +4,6 @@ from copy import deepcopy
 
 class DFA():
     """ DFA class which performed a Differential Fault Analysis """
-
     def __init__(self):
         """ Initialise the attribute """
         self.aes = []
@@ -52,11 +51,10 @@ class DFA():
         
         aes1.keyRounds[9] = deepcopy(K9)
         aes1.keyRounds[10] = deepcopy(K10)
-        
+       
+        # Round Aes with a fault
         aes2.subByte(lap)
-        aes2.insert_fault(lap, self.target_byte, fault) #-> TODO in aes.py
-        #state2 = aes2.cipher[lap] 
-        #state2[byte_attacked//4][(byte_attacked)%4] = state2[byte_attacked//4][byte_attacked%4] ^ fault
+        aes2.insert_fault(lap, self.target_byte, fault) 
             
         aes2.mixColumn(lap)
         aes2.addRoundKey(lap)
@@ -68,10 +66,12 @@ class DFA():
         
         # Finish the rounds of Aes
         for l in range(lap+1, aes2.Nr):
+            # Aes2 with fault
             aes2.subByte(l)
             aes2.mixColumn(l)
             aes2.addRoundKey(l)
 
+            # Aes1 clean
             aes1.subByte(l)
             aes1.mixColumn(l)
             aes1.addRoundKey(l)
@@ -81,6 +81,7 @@ class DFA():
         aes2.subByte(aes2.Nr)
         aes2.addRoundKey(aes2.Nr)
         
+        #Aes1 clean
         aes1.cipher[aes1.Nr] = deepcopy(aes1.cipher[aes1.Nr-1])
         aes1.subByte(aes1.Nr)
         aes1.addRoundKey(aes1.Nr)
