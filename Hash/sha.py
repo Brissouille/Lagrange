@@ -2,8 +2,10 @@ from z3 import *
 from .constant import Ksha, Hsha, sha_param
 
 class Sha():
+    """ Class which implements Hash function compliance with the FIPS 180 """
     message = 0
     def __init__(self, sha_type):
+        """ Init the type of Hash function and its symbolic variables """
         self.sha_type = sha_type
         self.hash_param = sha_param[sha_type]
 
@@ -43,6 +45,7 @@ class Sha():
             self.state[nb_rounds][key] = self.state[0][key] + value
 
     def compression(self, i, A, B, C, D, E, F, G, H):
+        """ Performs the compression function of the FIPS 180 """
         T1 = H  + self.Sigma_1(E) 
         T1 = T1 + self.Ch(E,F,G) 
         T1 = T1 + self.K[i]
@@ -60,6 +63,7 @@ class Sha():
         return dct 
 
     def preimage(self, round_attacked, hash_value):
+        """ Performs a preimage attack in function of reduced hash and the number of reduced round """
         Sha.reset(self)
         i = 0
         size_word = self.hash_param['Mblock']//(64) 
@@ -74,6 +78,7 @@ class Sha():
             print("No Solution")
 
     def digest(self, message, round_attack=-1):
+        """ Performs a hash """
         self.s.reset()
         # A format string which keeps the zeros on the left and transforms message in binary
         forme = "{:0"+str(len(message)*4)+"b}"
@@ -101,33 +106,41 @@ class Sha():
             print()
 
     def Ch(self, x, y, z):
+        """ Internal Function for the hash """
         # size_ff is used to perform a completion on 32 or 64 bits
         size_ff = (2**32) ** (self.hash_param['Mblock'] // 512) - 1
         return ((x & y) ^ (( x ^ size_ff) & z))
 
     def Maj(self, x, y, z):
+        """ Internal Function for the hash """
         return ((x & y) ^ (x & z) ^ (y & z))
 
     def Sigma_0(self, x):
+        """ Internal Function for the hash """
         f = self.hash_param['Sigma_0']
         return f(self,x)
 
     def Sigma_1(self, x):
+        """ Internal Function for the hash """
         f = self.hash_param['Sigma_1']
         return f(self,x)
 
     def sigma_0(self, x):
+        """ Internal Function for the hash """
         f = self.hash_param['sigma_0']
         return f(self,x)
 
     def sigma_1(self, x):
+        """ Internal Function for the hash """
         f = self.hash_param['sigma_1']
         return f(self, x)
 
     def reset(self):
+        """ reset the solver of the class """
         self.s = Sha.resetSolver(self)
 
     def resetSolver(self):
+        """ Create a solver """
         self.s = Solver()
         return self.s
 
