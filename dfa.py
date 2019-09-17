@@ -95,8 +95,11 @@ class DFA():
         # Save the cipher and the faulted cipher
         self.aes.append([aes1, aes2])
     
-    def exploit(self, list_exploit):
+    def exploit(self, lap, byte_attacked, list_exploit):
         """ Add the couple of cipher and faulted cipher in the solver and check the solutions """
+        for i in list_exploit:
+            self.insert(lap, byte_attacked)
+
         # We agregate the solver into one solver
         for aes, output in zip(self.aes, list_exploit):
             aes1, aes2 = aes
@@ -121,22 +124,33 @@ class DFA():
         else:
             print("No Solution")
 
-    def test(self, key, message, lap, byte_attacked, fault_list):
+    def encrypt(self, key, message, lap, byte_attacked, fault_list):
         """ Create a cipher and faulted cipher in function of the fault value """
         # For each faults 
         l = []
         aes1 = Aes(128)
         aes2 = Aes(128)
-        aes1.reset()
-        aes2.reset()
-        [aes1, aes2] = self.simulate(lap, byte_attacked, aes1, aes2) 
+        
+        aes1.cipher[lap] = deepcopy(aes1.cipher[lap-1])
+        aes2.cipher[lap] = deepcopy(aes2.cipher[lap-1])
+        
+        [aes1, aes2] = self.simulate(lap, byte_attacked, aes1, aes2)
+
         for fault_value in fault_list:
+            # Reset the aes for each loop
+            aes1.reset()
+            aes2.reset()
+            
             # Performs encryption with fault
             aes2.s.add(self.fault == fault_value)
             faulted_cipher = aes2.encrypt(key, message)
+            print(faulted_cipher)
 
             # Performs safe encryption
             cipher = aes1.encrypt(key, message)
+            print(cipher)
+
+            # Performs safe encryption
             l.append((faulted_cipher, cipher))
 
         return l
