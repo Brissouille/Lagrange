@@ -24,20 +24,20 @@ class Rsa():
        
         # Init variable
         self.message = Int("message")
-        self.p, self.q = Ints("p, q")
+        self.p, self.q = Ints("p q")
         self.n = self.p * self.q
         self.phi_n = (self.p-1) * (self.q-1)
         self.size_module = size_module
 
         # symbolic exponentiation with the previous variables
-        self.exponentiation()
+        self.encryption()
+        self.decryption()
 
         self.s = Solver()
 
         self.reset()
 
-
-    def exponentiation(self):
+    def encryption(self):
         """ Performs an exponentiation """
         self.cipher = 1
         for i in range(0, self.size_module):
@@ -45,27 +45,36 @@ class Rsa():
             multiply = If(self.e[i]==0x01, self.message, 1)
             self.cipher = (self.cipher * multiply) % self.n
 
+    def decryption(self):
+        """ Performs an exponentiation """
+        self.plain = 1
+        for i in range(0, self.size_module):
+            self.plain = self.plain * self.plain
+            multiply = If(self.d[i]==0x01, self.cipher, 1)
+            self.plain = (self.plain * multiply) % self.n
+    
     def encrypt(self, public_exponent, modulus, message):
         """ Computes the cipher in resolving the solver """
         self.addPublicExponent(public_exponent)
         self.addMessage(message)
         self.addModulus(modulus)
-        print(self.s.assertions()[0])
+        print(self.s.assertions()[len(self.s.assertions())-1])
         input()
         self.s.check()
         forme = "{:0"+str(self.size_module//8)+"x}"
         print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
-   
+
     def decrypt(self, private_exponent, modulus, message):
         """ Computes the plain in resolving the solver """
         self.addPrivateExponent(private_exponent)
         self.addCipher(message)
         self.addModulus(modulus)
-        print(self.s.assertions()[0])
+        self.s.add(self.message == self.plain)
+        print(self.s.assertions()[len(self.s.assertions())-1])
         input()
         self.s.check()
         forme = "{:0"+str(self.size_module//8)+"x}"
-        print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
+        print(forme.format(int(str(self.s.model().evaluate(self.plain)))))
     
     def addPrivateExponent(self, d):
         """ Addding the private exponent to solver """
@@ -98,13 +107,20 @@ class Rsa():
         """ Addding the cipher to solver """
         # message is in hexadecimal format
         self.s.add(self.cipher == int(cipher, 16))
+    
+    def addPlain(self, cipher):
+        """ Addding the cipher to solver """
+        # message is in hexadecimal format
+        self.s.add(self.cipher == int(cipher, 16))
 
     def resetSolver(self):
         """ Create a Solver and init with the sbox value """
         self.s.reset()
         e_int = BV2Int(Concat(self.e))
         d_int = BV2Int(Concat(self.d))
-        self.s.add( e_int * d_int == 1 % (self.phi_n))
+        #self.s.add( (e_int * d_int) % (self.phi_n) == 1)
+        #self.s.add( self.message**(e_int) % (self.n) == self.cipher)
+        #self.s.add( self.cipher**(d_int) % (self.n) == self.message)
         return self.s
     
     def reset(self):
