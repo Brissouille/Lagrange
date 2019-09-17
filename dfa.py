@@ -19,43 +19,14 @@ class DFA():
         """ Reset the solver of the DFA """
         self.s = DFA.resetSolver(self)
 
-    def insert(self, lap, byte_attacked):
-        """ Modelisation of a fault on 1 byte """
-        self.target_byte = byte_attacked
-        aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
-        aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
-
-        A = []
-        K9 = []
-        K10 = []
-        for i in range(4):
-            A_tmp = []
-            K9_tmp = []
-            K10_tmp = []
-            for j in range(4):
-                A_tmp.append(BitVec("A_%02d_%02d" % (j,i), 8))
-                K9_tmp.append(BitVec("K9_%02d_%02d" % (j,i), 8)) 
-                K10_tmp.append(BitVec("K10_%02d_%02d" % (j,i), 8))
-            A.append(A_tmp)
-            K9.append(K9_tmp)
-            K10.append(K10_tmp)
-            
+    def simulate(self, lap, byte_attacked, aes1, aes2):
         # Fault depend on the aes list
-        fault = BitVec("fault_%02d" %(len(self.aes)), 8)
-       
-        aes1.cipher[lap] = deepcopy(A)
-        aes2.cipher[lap] = deepcopy(A)
-        
-        aes2.keyRounds[9] = deepcopy(K9)
-        aes2.keyRounds[10] = deepcopy(K10)
-        
-        aes1.keyRounds[9] = deepcopy(K9)
-        aes1.keyRounds[10] = deepcopy(K10)
+        self.fault = BitVec("fault_%02d" %(len(self.aes)), 8)
        
         # Round Aes with a fault
         aes2.subByte(lap)
-        aes2.insert_fault(lap, self.target_byte, fault) 
-            
+        # Adding the last fault of the list
+        aes2.insert_fault(lap, byte_attacked, self.fault) 
         aes2.mixColumn(lap)
         aes2.addRoundKey(lap)
 
@@ -75,22 +46,60 @@ class DFA():
             aes1.subByte(l)
             aes1.mixColumn(l)
             aes1.addRoundKey(l)
-        
+       
         # Last Round with fault
         aes2.cipher[aes2.Nr] = deepcopy(aes2.cipher[aes2.Nr-1])
         aes2.subByte(aes2.Nr)
         aes2.addRoundKey(aes2.Nr)
         
-        #Aes1 clean
+        # Last Round with Aes1 clean
         aes1.cipher[aes1.Nr] = deepcopy(aes1.cipher[aes1.Nr-1])
         aes1.subByte(aes1.Nr)
         aes1.addRoundKey(aes1.Nr)
+        
+        return [aes1, aes2]
+
+    def insert(self, lap, byte_attacked):
+        """ Modelisation of a fault on 1 byte after the subbyte of the round 9"""
+        lap = 9
+        self.target_byte = byte_attacked
+        aes1 = Aes(128, "m_%02d_s" %(len(self.aes)))
+        aes2 = Aes(128, "m_%02d_f" %(len(self.aes)))
+
+        A = []
+        K9 = []
+        K10 = []
+        for i in range(4):
+            A_tmp = []
+            K9_tmp = []
+            K10_tmp = []
+            for j in range(4):
+                A_tmp.append(BitVec("A_%02d_%02d" % (j,i), 8))
+                K9_tmp.append(BitVec("K9_%02d_%02d" % (j,i), 8)) 
+                K10_tmp.append(BitVec("K10_%02d_%02d" % (j,i), 8))
+            A.append(A_tmp)
+            K9.append(K9_tmp)
+            K10.append(K10_tmp)
+            
+        aes1.cipher[lap] = deepcopy(A)
+        aes2.cipher[lap] = deepcopy(A)
+        
+        aes2.keyRounds[9] = deepcopy(K9)
+        aes2.keyRounds[10] = deepcopy(K10)
+        
+        aes1.keyRounds[9] = deepcopy(K9)
+        aes1.keyRounds[10] = deepcopy(K10)
+
+        aes1, aes2 = self.simulate(lap, byte_attacked, aes1, aes2)
 
         # Save the cipher and the faulted cipher
         self.aes.append([aes1, aes2])
-
-    def exploit(self, list_exploit):
+    
+    def exploit(self, lap, byte_attacked, list_exploit):
         """ Add the couple of cipher and faulted cipher in the solver and check the solutions """
+        for i in list_exploit:
+            self.insert(lap, byte_attacked)
+
         # We agregate the solver into one solver
         for aes, output in zip(self.aes, list_exploit):
             aes1, aes2 = aes
@@ -114,3 +123,34 @@ class DFA():
             
         else:
             print("No Solution")
+
+    def encrypt(self, key, message, lap, byte_attacked, fault_list):
+        """ Create a cipher and faulted cipher in function of the fault value """
+        # For each faults 
+        l = []
+        aes1 = Aes(128)
+        aes2 = Aes(128)
+        
+        aes1.cipher[lap] = deepcopy(aes1.cipher[lap-1])
+        aes2.cipher[lap] = deepcopy(aes2.cipher[lap-1])
+        
+        [aes1, aes2] = self.simulate(lap, byte_attacked, aes1, aes2)
+
+        for fault_value in fault_list:
+            # Reset the aes for each loop
+            aes1.reset()
+            aes2.reset()
+            
+            # Performs encryption with fault
+            aes2.s.add(self.fault == fault_value)
+            faulted_cipher = aes2.encrypt(key, message)
+            print(faulted_cipher)
+
+            # Performs safe encryption
+            cipher = aes1.encrypt(key, message)
+            print(cipher)
+
+            # Performs safe encryption
+            l.append((faulted_cipher, cipher))
+
+        return l

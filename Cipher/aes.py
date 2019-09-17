@@ -168,13 +168,14 @@ class Aes():
             for i in range(4):
                 for j in range(4):
                     toto = self.s.model().evaluate(self.cipher[self.Nr][i][j])
-                    solution.append(int(str(toto)))
+                    tmp = int(str(toto))
+                    solution.append("{:02x}".format(tmp))
 
         elif(sat_resp==unknown):
             print("#"*25)
         else:
             print("No Solution")
-        return solution
+        return "".join(solution)
     
     def decrypt(self, key, cipher):
         """ Computes the plain in resolving the solver """
@@ -190,14 +191,13 @@ class Aes():
             for i in range(4):
                 for j in range(4):
                     toto = self.s.model().evaluate(self.message[i][j])
-                    solution.append(int(str(toto)))
-        
+                    solution.append("{:02x}".format(int(str(toto))))
         elif(sat_resp==unknown):
             print("#"*25)
 
         else:
             print("No Solution")
-        return solution
+        return "".join(solution)
 
     def addCipher(self, value):
         """ Addding the cipher to solver """
