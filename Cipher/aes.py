@@ -239,7 +239,8 @@ class Aes():
             #print("Solution found")
             l=0
             a=[]
-            print(self.getKeyRound(0)) 
+            a = self.getKeyRound(0)
+            return a
         elif(sat_resp==unknown):
             print("#"*25)
         else:

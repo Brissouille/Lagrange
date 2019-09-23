@@ -1,5 +1,5 @@
 from z3 import *
-from .constant import Ksha, Hsha, sha_param
+from Hash.constant import Ksha, Hsha, sha_param
 
 class Sha():
     """ Class which implements Hash function compliance with the FIPS 180 """

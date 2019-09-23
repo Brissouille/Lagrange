@@ -1,6 +1,6 @@
-from .aes import Aes
-from ..hw import Hw
-from ..model import Model
+from Cipher.aes import Aes
+from hw import Hw
+from model import Model
 
 class Aes_Hw(Aes, Hw, metaclass = Model):
     def __init__(self, keylength):

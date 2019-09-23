@@ -1,5 +1,5 @@
 from z3 import *
-from .aes import Aes
+from Cipher.aes import Aes
 
 class Aes_Mode():
     def __init__(self, keylength, size_message): 
@@ -46,12 +46,12 @@ class Aes_Mode():
         self.reset()
 
     def toString(self, attribut_key):
+        a = []
         for b in range(self.blocks):
             for i in range(4):
                 for j in range(4):
-                    print("{:02x}".format(int(str(self.s.model().evaluate(self.__dict__[attribut_key][b][i][j])))), end='')
-            print('', end=' ')
-        print()
+                    a.append("{:02x}".format(int(str(self.s.model().evaluate(self.__dict__[attribut_key][b][i][j])))))
+        return "".join(a)
 
     def check(self):
         return self.s.check()
