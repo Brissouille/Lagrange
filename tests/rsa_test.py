@@ -1,10 +1,21 @@
 from Cipher.rsa import Rsa
 
-size_module = 8
+size_module = 16
 rsa = Rsa(size_module)
 
-exponent = "03"
-modulus = "ff"
-message = "89"
+p = 61
+q = 251
 
-rsa.encrypt(exponent, modulus, message)
+e = "3"
+d = "3"
+modulus = "3bcf" # p * q
+
+message = "5f"
+
+cipher = rsa.encrypt(e, modulus, message)
+print(cipher)
+
+rsa.reset()
+
+plain = rsa.decrypt(d, modulus, cipher)
+print(plain)

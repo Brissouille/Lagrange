@@ -15,66 +15,88 @@ class Rsa():
         # phi
         self.phi_n = []
 
-        # message
-        self.message = []
+        # message to encrypt
+        self.message = Int("message")
+        
+        # message to decrypt
+        self.encrypted_message = Int("ecnrypted_message")
         
         for i in range(size_module):
             self.d.append(BitVec("d_%x" %(i), 1))
             self.e.append(BitVec("e_%x" %(i), 1))
        
         # Init variable
-        self.message = Int("message")
-        self.phi_n = Int("phi_n")
-        self.n = Int("n")
+        self.p, self.q = Ints("p q")
+        self.n = self.p * self.q
+        self.phi_n = (self.p-1) * (self.q-1)
         self.size_module = size_module
 
-        # symbolic exponentiation with the previous variables
-        self.exponentiation()
+        ## symbolic exponentiation with the previous variables
+
+        # Init cipher (= encryption of message variable)
+        self.encryption()
+
+        # Init plain (= decryption of encrypted message variable)
+        self.decryption()
 
         self.s = Solver()
 
-    def exponentiation(self):
-        """ Performs an encryption """
-        self.cipher = 1
-        for i in range(0, self.size_module):
-            self.cipher = self.cipher * self.cipher
-            multiply = If(self.e[i]==0x01, self.message, 1)
-            self.cipher = (self.cipher * multiply) % self.n
+        self.reset()
 
-    def encrypt(self, public_exponent, modulus, message):
-        """ Computes the cipher in resolving the solver """
-        self.addPublicExponent(public_exponent)
+    def encryption(self):
+        """ encrypt with an exponentiation and public exponent """
+        self.cipher = self.exponentiation(self.e, self.n, self.message)
+    
+    def decryption(self):
+        """ decrypt with an exponentiation and private exponent """
+        self.plain = self.exponentiation(self.d, self.n, self.encrypted_message)
+
+    def exponentiation(self, exponent, n, message):
+        """ Performs an exponentiation """
+        result = 1
+        for i in range(self.size_module):
+            result = (result * result) % n
+            multiply = If(exponent[i]==0x01, message, 1)
+            result = (result * multiply) % n
+        return result
+
+    def encrypt(self, exponent, modulus, message):
+        """ Computes the plain in resolving the solver """
+        self.addPublicExponent(exponent)
         self.addMessage(message)
         self.addModulus(modulus)
         self.s.check()
-        forme = "{:0"+str(self.size_module//8)+"x}"
-        print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
+        forme = "{:x}"
+        return forme.format(int(str(self.s.model().evaluate(self.cipher))))
    
-    def decrypt(self, private_exponent, modulus, message):
+    def decrypt(self, exponent, modulus, cipher):
         """ Computes the plain in resolving the solver """
-        self.addPrivateExponent(private_exponent)
-        self.addCipher(message)
+        self.addPrivateExponent(exponent)
+        self.addEncryptedMessage(cipher)
         self.addModulus(modulus)
         self.s.check()
-        forme = "{:0"+str(self.size_module//8)+"x}"
-        print(forme.format(int(str(self.s.model().evaluate(self.cipher)))))
-    
-    def addPrivateExponent(self, d):
-        """ Addding the private exponent to solver """
-        self.addExponent(d, 'd')
-
-    def addPublicExponent(self, e):
+        forme = "{:x}"
+        return forme.format(int(str(self.s.model().evaluate(self.plain))))
+   
+    def addPublicExponent(self, public_exponent):
         """ Addding the public exponent to solver """
-        self.addExponent(e, 'e')
+        self.addExponent(public_exponent, 'e')
 
-    def addExponent(self, exponent, exp_attrib):
+    def addPrivateExponent(self, private_exponent):
+        """ Addding the private exponent to solver """
+        self.addExponent(private_exponent, 'd')
+
+    def addExponent(self, exponent, attribute):
         """ Addding the exponent to solver """
         # e is in hexadecimal format but not zero complemented
         forme = "{:0"+str(self.size_module)+"b}"
+        # zero completion
         exponent = forme.format(int(exponent,16))
-        for i in range(len(exponent)):
-            exp_value = self.__getattribute__(exp_attrib)
-            self.s.add(exp_value[i] == exponent[i])
+        # Get the bitvector of the exponent
+        exp_value = self.__getattribute__(attribute)
+        # equal bit to bit
+        for i,j in zip(exponent, exp_value):
+            self.s.add(i == j)
 
     def addModulus(self, module):
         """ Addding the modulus to solver """
@@ -82,22 +104,21 @@ class Rsa():
         self.s.add(self.n == int(module, 16))
     
     def addMessage(self, message):
-        """ Addding the plaint to solver """
+        """ Addding the plain to solver """
         # message is in hexadecimal format
         self.s.add(self.message == int(message, 16))
     
-    def addCipher(self, cipher):
+    def addEncryptedMessage(self, cipher):
         """ Addding the cipher to solver """
         # message is in hexadecimal format
-        self.s.add(self.cipher == int(cipher, 16))
-
+        self.s.add(self.encrypted_message == int(cipher, 16))
+    
     def resetSolver(self):
         """ Create a Solver and init with the sbox value """
         self.s.reset()
         return self.s
     
     def reset(self):
-        """ reset the solver of the class """
-        self.s.reset()
+        """ reset the solver for this class """
         self.s = Rsa.resetSolver(self)
 
