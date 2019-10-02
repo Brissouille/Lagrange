@@ -12,6 +12,10 @@ modulus = "3bcf" # p * q
 
 message = "5f"
 
-rsa.encrypt(e, modulus, message)
+cipher = rsa.encrypt(e, modulus, message)
+print(cipher)
+
 rsa.reset()
-rsa.decrypt(d, modulus, "3ba6")
+
+plain = rsa.decrypt(d, modulus, cipher)
+print(plain)

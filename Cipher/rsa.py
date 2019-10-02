@@ -44,9 +44,11 @@ class Rsa():
         self.reset()
 
     def encryption(self):
+        """ encrypt with an exponentiation and public exponent """
         self.cipher = self.exponentiation(self.e, self.n, self.message)
     
     def decryption(self):
+        """ decrypt with an exponentiation and private exponent """
         self.plain = self.exponentiation(self.d, self.n, self.encrypted_message)
 
     def exponentiation(self, exponent, n, message):
@@ -63,23 +65,25 @@ class Rsa():
         self.addPublicExponent(exponent)
         self.addMessage(message)
         self.addModulus(modulus)
-        print(self.s.check())
-        forme = "{:0"+str(self.size_module//8)+"x}"
-        print(str(self.s.model().evaluate(self.cipher)))
+        self.s.check()
+        forme = "{:x}"
+        return forme.format(int(str(self.s.model().evaluate(self.cipher))))
    
     def decrypt(self, exponent, modulus, cipher):
         """ Computes the plain in resolving the solver """
         self.addPrivateExponent(exponent)
         self.addEncryptedMessage(cipher)
         self.addModulus(modulus)
-        print(self.s.check())
-        forme = "{:0"+str(self.size_module//8)+"x}"
-        print(str(self.s.model().evaluate(self.plain)))
+        self.s.check()
+        forme = "{:x}"
+        return forme.format(int(str(self.s.model().evaluate(self.plain))))
    
     def addPublicExponent(self, public_exponent):
+        """ Addding the public exponent to solver """
         self.addExponent(public_exponent, 'e')
 
     def addPrivateExponent(self, private_exponent):
+        """ Addding the private exponent to solver """
         self.addExponent(private_exponent, 'd')
 
     def addExponent(self, exponent, attribute):
