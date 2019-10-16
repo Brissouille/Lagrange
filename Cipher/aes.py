@@ -232,9 +232,11 @@ class Aes():
             s.add(self.subByte_f(i)==self.sbox_tab[i])
         return s
 
-    def check(self):
+    def check(self, hypothesis=None):
         """ resolve the system of equation and explicit master key """
-        sat_resp = self.s.check()
+        self.addMessage("000102030405060708090A0B0C0D0E0F")
+        self.addCipher("7b050e30538a0e34bb618465de87906f")
+        sat_resp = self.s.check(hypothesis)
         if (sat_resp==sat):
             #print("Solution found")
             l=0
@@ -245,10 +247,9 @@ class Aes():
             print("#"*25)
         else:
             print("No Solution")
-            l=1
-            for i in range(4):
-                for j in range(4):
-                    print(self.keyRounds[l][i][j])
+            causes = self.s.unsat_core()
+            for j in range(4):
+                print(causes[j])
   
     def getKeyRound(self, lap):
         """ Return the master key in string type """
