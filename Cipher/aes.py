@@ -232,7 +232,7 @@ class Aes():
             s.add(self.subByte_f(i)==self.sbox_tab[i])
         return s
 
-    def check(self, hypothesis=None):
+    def check(self, hypothesis=[]):
         """ resolve the system of equation and explicit master key """
         self.addMessage("000102030405060708090A0B0C0D0E0F")
         self.addCipher("7b050e30538a0e34bb618465de87906f")
