@@ -20,10 +20,12 @@ aes.reset()
 
 #list_Hw = [aes.Hw(aes.keyRounds[j // 16][(j // 4) % 4][j % 4]) == aes.Hw_func(int(key_test[j // 16][(j%16)*2:((j%16)+1)*2], 16)) for j in range(176)]
 
-l = 1
-list_key = [aes.keyRounds[l][(j // 4)][j % 4] == int(key_test[l][(j%16)*2:((j%16)+1)*2], 16) for j in range(16)]
+lap = 0
+list_key = [aes.keyRounds[lap][(j // 4)][j % 4] == int(key_test[lap][(j%16)*2:((j%16)+1)*2], 16) for j in range(16)]
 
-list_key[0] = aes.keyRounds[l][0][0] == 0xc1
+c = 0
+l = 1
+list_key[c*4+l] = aes.keyRounds[lap][c][l] == 0x9B
 
 key_guess = aes.check(list_key)
 
