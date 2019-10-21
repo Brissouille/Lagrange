@@ -27,7 +27,8 @@ class Rsa():
        
         # Init variable
         self.p, self.q = Ints("p q")
-        self.n = self.p * self.q
+        #self.n = self.p * self.q
+        self.n = Int("n")
         self.phi_n = (self.p-1) * (self.q-1)
         self.size_module = size_module
 
@@ -61,7 +62,7 @@ class Rsa():
         return result
 
     def encrypt(self, exponent, modulus, message):
-        """ Computes the plain in resolving the solver """
+        """ Computes the cipher in resolving the solver """
         self.addPublicExponent(exponent)
         self.addMessage(message)
         self.addModulus(modulus)
@@ -77,16 +78,29 @@ class Rsa():
         self.s.check()
         forme = "{:x}"
         return forme.format(int(str(self.s.model().evaluate(self.plain))))
-   
+
+    def coppersmith(self, n_4):
+        # length of n_4 must be one quater of szize module in bits
+        assert(len(n_4)==self.size_module//16)
+        """ Attack with key exposure """
+        e = BV2Int(Concat(self.e))
+        d = BV2Int(Concat(self.d))
+        partial_n = int(n_4, 16)
+        partial_n = partial_n 
+        k = Int("k")
+        self.addPrivateExponent(n_4, 2048-2048//4)
+        self.s.add(self.p == (e*d*self.p - k * self.p * (self.n - self.p + 1) + k * self.n) % partial_n)
+        print(self.s.check())
+
     def addPublicExponent(self, public_exponent):
         """ Addding the public exponent to solver """
         self.addExponent(public_exponent, 'e')
 
-    def addPrivateExponent(self, private_exponent):
+    def addPrivateExponent(self, private_exponent, offset=0):
         """ Addding the private exponent to solver """
-        self.addExponent(private_exponent, 'd')
+        self.addExponent(private_exponent, 'd', offset)
 
-    def addExponent(self, exponent, attribute):
+    def addExponent(self, exponent, attribute, offset=0):
         """ Addding the exponent to solver """
         # e is in hexadecimal format but not zero complemented
         forme = "{:0"+str(self.size_module)+"b}"
@@ -94,6 +108,11 @@ class Rsa():
         exponent = forme.format(int(exponent,16))
         # Get the bitvector of the exponent
         exp_value = self.__getattribute__(attribute)
+        
+        # We find only the used bit
+        exponent = exponent[offset:]
+        exp_value = exp_value[offset:]
+
         # equal bit to bit
         for i,j in zip(exponent, exp_value):
             self.s.add(i == j)
