@@ -27,7 +27,6 @@ class Rsa():
        
         # Init variable
         self.p, self.q = Ints("p q")
-        #self.n = self.p * self.q
         self.n = Int("n")
         self.phi_n = (self.p-1) * (self.q-1)
         self.size_module = size_module
@@ -84,12 +83,21 @@ class Rsa():
         assert(len(n_4)==self.size_module//16)
         """ Attack with key exposure """
         e = BV2Int(Concat(self.e))
-        d0 = BV2Int(self.d[self.size_module - self.size_module//4:])
+        d0 = BV2Int(Concat(self.d[self.size_module - self.size_module//4:]))
         partial_n = 2**(4*len(n_4))
         k = Int("k")
-        self.s.add(self.p == (e * d0 * self.p - k * self.p * (self.n - self.p + 1) + k * self.n) % partial_n)
+        self.s.add(k<e, 0<k)
+        self.s.add(self.p<self.n, 0<self.p)
+        self.s.add(self.q<self.n, 0<self.q)
+        self.s.add(self.n == self.p * self.q)
+        #self.s.add(self.p == (e * d0 * self.p - k * self.p * (self.n - self.p + 1) + k * self.n) % partial_n)
+        self.s.add(d0 == int(n_4, 16))
+        self.s.add((e * d0)% partial_n == (1 + k * (self.n -(self.p+self.q) + 1))% partial_n)
+        self.s.add((self.p*self.p -(self.p+self.q)*self.p + self.p*self.q) % partial_n == 0)
+        
         print(self.s.check())
-        print(hex(int(str(self.s.model().evaluate(d)))))
+        print(self.s.model())
+        print(hex(int(str(self.s.model().evaluate(self.p)))))
 
     def addPublicExponent(self, public_exponent):
         """ Addding the public exponent to solver """

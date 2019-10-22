@@ -13,15 +13,15 @@ rsa = Rsa(size_module)
 #rsa.coppersmith("24e7e0ec0258460e98e38966f2e36eb5795adc00144ef43e4742ce69d403fe1ba183426c4675a5fbb7924a6b9a195b32c0b53b84c7f17813ec1714599f1935cb")
 
 # 512
-modulus = "00bd79e614800471cb8bfc1e9700a9a51cf56d7d9d2efe0519a0114921f5e1d9266fed389d1006b869c378627391d52cb68bac0105111367691e3d6df613bfc7b9"
+#modulus = "00bd79e614800471cb8bfc1e9700a9a51cf56d7d9d2efe0519a0114921f5e1d9266fed389d1006b869c378627391d52cb68bac0105111367691e3d6df613bfc7b9"
 
-e = "3"
+#e = "3"
 
-d = "7e51440daaada1325d52bf0f55c66e134e48fe68c9feae111560db6bf9413b6dcf3088b82ac99b22fba71bd8c4e182357ecdcd175b79d091713cbc94f137b1a3"
+#d = "7e51440daaada1325d52bf0f55c66e134e48fe68c9feae111560db6bf9413b6dcf3088b82ac99b22fba71bd8c4e182357ecdcd175b79d091713cbc94f137b1a3"
 
-message = "0"*63+"8"+"0"*63+"5f"
+#message = "0"*63+"8"+"0"*63+"5f"
 
-# 8
+# 16
 
 p = 61
 q = 251
@@ -42,5 +42,7 @@ print(plain)
 
 rsa.reset()
 
+rsa.addModulus(modulus)
 rsa.addPublicExponent(e)
 rsa.coppersmith("F")
+
