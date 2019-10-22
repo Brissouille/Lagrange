@@ -84,13 +84,12 @@ class Rsa():
         assert(len(n_4)==self.size_module//16)
         """ Attack with key exposure """
         e = BV2Int(Concat(self.e))
-        d = BV2Int(Concat(self.d))
-        partial_n = int(n_4, 16)
-        partial_n = partial_n 
+        d0 = BV2Int(self.d[self.size_module - self.size_module//4:])
+        partial_n = 2**(4*len(n_4))
         k = Int("k")
-        self.addPrivateExponent(n_4, 2048-2048//4)
-        self.s.add(self.p == (e*d*self.p - k * self.p * (self.n - self.p + 1) + k * self.n) % partial_n)
+        self.s.add(self.p == (e * d0 * self.p - k * self.p * (self.n - self.p + 1) + k * self.n) % partial_n)
         print(self.s.check())
+        print(hex(int(str(self.s.model().evaluate(d)))))
 
     def addPublicExponent(self, public_exponent):
         """ Addding the public exponent to solver """
