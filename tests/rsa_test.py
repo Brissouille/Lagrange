@@ -46,4 +46,7 @@ rsa.reset()
 #d_len = len(d)
 #rsa.coppersmith(d[d_len*3//4:])
 
-print(rsa.crt(27, 5, 11, 17))
+rsa.crt_init(2)
+l = [["3","5"], ["8","B"]]
+x = rsa.crt_exploit(l, "3")
+print(x)

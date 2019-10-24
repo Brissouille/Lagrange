@@ -78,14 +78,59 @@ class Rsa():
         forme = "{:x}"
         return forme.format(int(str(self.s.model().evaluate(self.plain))))
 
-    def crt(self, d, p, q, c):
-        dp = d%(p-1)
-        dq = d%(q-1)
-        return (((c**dp)*(q)) + ((c**dq)*p*(q-2)))%(p*q)
+    def crt_init(self, dest_number):
+        ai = []
+        ni = []
+        Ni = []
+        Mi = []
+        N = Int("N")
+        # Init Crt theorem with dest_number components
+        for i in range(dest_number):
+            ni.append(Int("n"+str(i)))
+            ai.append(Int("a"+str(i)))
+            Ni.append(N/ni[-1])
+            Mi.append(Int("m"+str(i)))
+
+        self.crt = Crt()
+        self.crt.ni = ni
+        self.crt.ai = ai
+        self.crt.Ni = Ni
+        self.crt.Mi = Mi
+        self.crt.N = N
+
+    def crt_exploit(self, dest_list, exponent):
+        assert(len(dest_list) == len(self.crt.ni))
+        ni = self.crt.ni
+        ai = self.crt.ai
+        Ni = self.crt.Ni
+        Mi = self.crt.Mi
+        N = self.crt.N
+        
+        N_temp = 1
+        for i in range(len(dest_list)):
+            N_temp = N_temp * ni[i]
+            self.s.add(ai[i]==int(dest_list[i][0], 16))
+            self.s.add(ni[i]==int(dest_list[i][1], 16))
+            self.s.add((Ni[i]*Mi[i])%ni[i]==1, 0<Mi[i], Mi[i]<ni[i])
+        self.s.add(N==N_temp)
+
+        #self.s.check()
+        me = sum([ai[i]*Ni[i]*Mi[i] for i in range(len(ni))])%N
+        #return self.s.add(sum([ai[i]*Ni[i]*Mi[i] for i in range(len(ni))])%N)
+        
+        message = Int("message")
+        e = Int("e")
+        self.s.add(message**e == me)
+        self.s.add(e == int(exponent))
+        self.s.add(0<message)
+        print(self.s.check())
+        return self.s.model().evaluate(message)
+
+        
 
     def coppersmith(self, n_4):
-        # length of n_4 must be one quater of szize module in bits
-        assert(len(n_4)==self.size_module//16)
+        # length of n_4 must be one quater of size module in bits
+        assert(len(n_4) == self.size_module//16)
         """ Attack with key exposure """
         e = BV2Int(Concat(self.e))
         d0 = BV2Int(Concat(self.d[self.size_module - self.size_module//4:]))
@@ -152,4 +197,8 @@ class Rsa():
     def reset(self):
         """ reset the solver for this class """
         self.s = Rsa.resetSolver(self)
+
+class Crt():
+    def __init__(self):
+        pass
 
