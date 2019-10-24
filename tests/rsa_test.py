@@ -1,6 +1,6 @@
 from Cipher.rsa import Rsa
 
-size_module = 16
+size_module = 32
 rsa = Rsa(size_module)
 
 #e = 511*"0"+"3"
@@ -21,16 +21,15 @@ rsa = Rsa(size_module)
 
 #message = "0"*63+"8"+"0"*63+"5f"
 
-# 16
+# 32
+p = 57899
+q = 55487
 
-p = 61
-q = 251
+modulus = "bf7d0615"
+e = "00000003"
+d = "7fa78773"
 
-modulus = "{:04x}".format(p * q)
-e = "0007"
-d = "085F"
-
-message = "5f"
+message = "0000d000"
 
 cipher = rsa.encrypt(e, modulus, message)
 print(cipher)
@@ -44,5 +43,5 @@ rsa.reset()
 
 rsa.addModulus(modulus)
 rsa.addPublicExponent(e)
-rsa.coppersmith("F")
-
+d_len = len(d)
+rsa.coppersmith(d[d_len*3//4:])

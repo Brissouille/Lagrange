@@ -91,9 +91,9 @@ class Rsa():
         self.s.add(self.q<self.n, 0<self.q)
         self.s.add(self.n == self.p * self.q)
         #self.s.add(self.p == (e * d0 * self.p - k * self.p * (self.n - self.p + 1) + k * self.n) % partial_n)
-        self.s.add(d0 == int(n_4, 16))
+        self.s.add(d0 == int(n_4, 16)) 
         self.s.add((e * d0)% partial_n == (1 + k * (self.n -(self.p+self.q) + 1))% partial_n)
-        self.s.add((self.p*self.p -(self.p+self.q)*self.p + self.p*self.q) % partial_n == 0)
+        #self.s.add((self.p*self.p -(self.p+self.q)*self.p + self.p*self.q) % partial_n == 0)
         
         print(self.s.check())
         print(self.s.model())
