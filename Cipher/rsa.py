@@ -78,6 +78,11 @@ class Rsa():
         forme = "{:x}"
         return forme.format(int(str(self.s.model().evaluate(self.plain))))
 
+    def crt(self, d, p, q, c):
+        dp = d%(p-1)
+        dq = d%(q-1)
+        return (((c**dp)*(q)) + ((c**dq)*p*(q-2)))%(p*q)
+
     def coppersmith(self, n_4):
         # length of n_4 must be one quater of szize module in bits
         assert(len(n_4)==self.size_module//16)

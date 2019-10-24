@@ -41,7 +41,9 @@ print(plain)
 
 rsa.reset()
 
-rsa.addModulus(modulus)
-rsa.addPublicExponent(e)
-d_len = len(d)
-rsa.coppersmith(d[d_len*3//4:])
+#rsa.addModulus(modulus)
+#rsa.addPublicExponent(e)
+#d_len = len(d)
+#rsa.coppersmith(d[d_len*3//4:])
+
+print(rsa.crt(27, 5, 11, 17))
