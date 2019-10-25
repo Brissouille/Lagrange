@@ -1,8 +1,9 @@
 from Cipher.rsa import Rsa
 
-size_module = 32
+size_module = 512
 rsa = Rsa(size_module)
 
+# 2048
 #e = 511*"0"+"3"
 #d="77ef1bf1a71602b007c311a55f7b5f1f1154c0f869d79fcd23b3272758ce17be256878da268b689a2eb7f5add0b0a1d760647261338c9063d17480c895134078e2c1a10d2f97db76fcbc5ca055da200932e0feb101b90fb4186570e7cda10e4d6999698594f66c96517b5abe2779684c51f606e9337756c360269e0e7df7be14f9c8da6230167f9d56516b1d63939100a17431ef4c0d132605f139dca671faf26e02bf1d565ef250718efd3fdc20bd022660fafb52a5cdacb04db1484dedb2c524e7e0ec0258460e98e38966f2e36eb5795adc00144ef43e4742ce69d403fe1ba183426c4675a5fbb7924a6b9a195b32c0b53b84c7f17813ec1714599f1935cb"
 
@@ -22,14 +23,14 @@ rsa = Rsa(size_module)
 #message = "0"*63+"8"+"0"*63+"5f"
 
 # 32
-p = 57899
-q = 55487
+#p = 57899
+#q = 55487
 
-modulus = "bf7d0615"
-e = "00000003"
-d = "7fa78773"
+#modulus = "bf7d0615"
+#e = "00000003"
+#d = "7fa78773"
 
-message = "0000d000"
+#message = "0000d000"
 
 cipher = rsa.encrypt(e, modulus, message)
 print(cipher)

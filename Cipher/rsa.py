@@ -114,16 +114,14 @@ class Rsa():
             self.s.add((Ni[i]*Mi[i])%ni[i]==1, 0<Mi[i], Mi[i]<ni[i])
         self.s.add(N==N_temp)
 
-        #self.s.check()
         me = sum([ai[i]*Ni[i]*Mi[i] for i in range(len(ni))])%N
-        #return self.s.add(sum([ai[i]*Ni[i]*Mi[i] for i in range(len(ni))])%N)
         
         message = Int("message")
         e = Int("e")
         self.s.add(message**e == me)
         self.s.add(e == int(exponent))
         self.s.add(0<message)
-        print(self.s.check())
+        self.s.check()
         return self.s.model().evaluate(message)
 
         
