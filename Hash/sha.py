@@ -4,13 +4,12 @@ from Hash.constant import Ksha, Hsha, sha_param
 class Sha():
     """ Class which implements Hash function compliance with the FIPS 180 """
     message = 0
-    def __init__(self, sha_type):
+    def __init__(self, sha_type, prefix='message_'):
         """ Init the type of Hash function and its symbolic variables """
         self.sha_type = sha_type
         self.hash_param = sha_param[sha_type]
-
-        self.message = BitVecs(["message%02d" %i for i in range(self.hash_param['Mblock'])], 1)
-
+        self.message = BitVecs([prefix+"%02d" %i for i in range(self.hash_param['Mblock'])], 1)
+       
         # Init Solver
         self.s = Solver()
 
