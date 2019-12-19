@@ -35,8 +35,26 @@ class Collision():
         for key1, key2 in zip(sha_m0.state[round_attacked].items(), sha_m1.state[round_attacked].items()):
             self.s.add(key1[1] == key2[1])
 
-        print(self.s.check())
+        result = self.s.check()
         
-        for i in range(len(sha_m0.message)):
-            print( (i, self.s.model().evaluate(sha_m0.message[i]) == self.s.model().evaluate(sha_m1.message[i])))
+        if result == sat:
+            result1 = []
+            result2 = []
+            for i in range(len(sha_m0.message)):
+                result1.append(str(self.s.model().evaluate(sha_m0.message[i])))
+                result2.append(str(self.s.model().evaluate(sha_m1.message[i])))
+            result1 = "".join(result1)
+            result2 = "".join(result2)
+
+            result1 = hex(int(result1, 2))
+            result2 = hex(int(result2, 2))
+
+            return (result1, result2)
+
+        elif result == unsat:
+            print("Unsat")
+            return None
+        else:
+            print("#"*80)
+            return None
             
