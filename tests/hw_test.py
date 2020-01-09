@@ -1,4 +1,5 @@
 from Cipher.aes_hw import Aes_Hw
+from z3 import Or
 
 key_test = ["C0A6B0A6636D3AC7D7D3065BA70827D3",
              "F16AD6FA9207EC3D45D4EA66E2DCCDB5",
@@ -17,8 +18,15 @@ s = 128
 aes = Aes_Hw(s)
 
 aes.reset()
-for j in range(176):
-    aes.s.add(aes.Hw(aes.keyRounds[j // 16][(j // 4) % 4][j % 4]) == aes.Hw_func(int(key_test[j // 16][(j%16)*2:((j%16)+1)*2], 16)))
+for j in range(156):
+    aes.s.add(
+            Or(
+                aes.Hw(aes.keyRounds[j // 16][(j // 4) % 4][j % 4]) 
+                    == aes.Hw_func(int(key_test[j // 16][(j%16)*2:((j%16)+1)*2], 16)),
+                aes.Hw(aes.keyRounds[j // 16][(j // 4) % 4][j % 4]) 
+                    == (aes.Hw_func(int(key_test[j // 16][(j%16)*2:((j%16)+1)*2], 16)) + 1)%8
+            )
+    )
 
 key_guess = aes.check()
 
