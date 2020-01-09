@@ -19,11 +19,12 @@ aes = Aes(s, "message")
 
 aes.reset()
 
-l = 3
 for l in range(10,11):
     for i in range(0,4):
-        for j in range(0,4):
+        for j in range(0,2):
             aes.addPartialKey(l, j, i, int(key_test[l][2*(j*4+i):2*(j*4+i+1)], 16)) 
+        for j in range(2,4):
+            aes.addPartialKey(l-1, j, i, int(key_test[l-1][2*(j*4+i):2*(j*4+i+1)], 16)) 
 	
 solution = aes.check()
 print(solution)
