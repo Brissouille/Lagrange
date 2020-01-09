@@ -4,12 +4,11 @@ from Hash.constant import Ksha, Hsha, sha_param
 class Sha():
     """ Class which implements Hash function compliance with the FIPS 180 """
     message = 0
-    def __init__(self, sha_type):
+    def __init__(self, sha_type, prefix='message_'):
         """ Init the type of Hash function and its symbolic variables """
         self.sha_type = sha_type
         self.hash_param = sha_param[sha_type]
-
-        self.message = BitVecs(["message%02d" %i for i in range(self.hash_param['Mblock'])], 1)
+        self.message = BitVecs([prefix+"%02d" %i for i in range(self.hash_param['Mblock'])], 1)
        
         # Init Solver
         self.s = Solver()
@@ -72,10 +71,11 @@ class Sha():
             i = i + 1
             
         if(self.s.check()==sat):
-            for i in range(1, 256):
-                print(self.s.model().evaluate(self.message[i]))
+            message = str([self.s.model().evaluate(self.message[i]) for i in range(512)])
         else:
             print("No Solution")
+            message = ""
+        return  message
 
     def digest(self, message, round_attack=-1):
         """ Performs a hash """
@@ -102,8 +102,8 @@ class Sha():
             # to print in hex on 8 caracteres or 16 caracteres
             forme = "{:0"+str(self.hash_param['Mblock']//64)+"x}"
             size_hash = self.sha_type // (self.hash_param['Mblock'] // 16)
-            [print(forme.format(int(str(self.s.model().evaluate(self.state[round_attack][chr(i+0x41)])))), end='') for i in range(size_hash)] 
-            print()
+            hash_result = [forme.format(int(str(self.s.model().evaluate(self.state[round_attack][chr(i+0x41)])))) for i in range(size_hash)] 
+            return "".join(hash_result)
 
     def Ch(self, x, y, z):
         """ Internal Function for the hash """
