@@ -13,7 +13,7 @@ class Aes():
         self.Nk = keylength//32
 
         # Nomber of rounds
-        self.Nr = 4 #self.Nk+6
+        self.Nr = self.Nk+6
         
         self.keyRounds = [0] * (self.Nr + 1)
 
