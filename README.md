@@ -1,6 +1,7 @@
 # Lagrange
 Implementation of different cryptographic algorithms with z3 solver sat.
 We transform the algorithms (AES, ...) into different equations. We add the intermediate values (Output of the Sbox, ...) retrieved during side-channel attacks in the system of equations. We resolve the system in order to retrieve the key.
+Other attack are implemented (Square Attack on round 4).
 
 Multiple primary classes are implemented:
 - AES
