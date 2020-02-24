@@ -2,7 +2,7 @@ from z3 import *
 from Cipher.aes import Aes
 
 class Aes_Mode():
-    def __init__(self, keylength, size_message): 
+    def __init__(self, keylength, size_message, prefix="M"): 
         # Init the solver
         self.s = Solver()
 
@@ -33,7 +33,7 @@ class Aes_Mode():
             self.cipher[b] = [0] * 4
 
             # Init each Aes with a different plaintext name
-            self.aes[b] = Aes(keylength, "m"+str(b))
+            self.aes[b] = Aes(keylength, prefix+"_m"+str(b))
 
             # We init mi in the Aes class by the Mi ^ Ci-1 in the Aes_Cbc class
             for i in range(4):
@@ -150,8 +150,8 @@ class Aes_Mode():
         raise NotImplementedError("AES_Mode.init_mode() is an abstract function")
 
 class Aes_Cbc(Aes_Mode):
-    def __init__(self, keylength, size_message):
-        super().__init__(keylength, size_message)
+    def __init__(self, keylength, size_message, prefix):
+        super().__init__(keylength, size_message, prefix)
 
     def init_mode(self, s):
         for i in range(4):
@@ -168,8 +168,8 @@ class Aes_Cbc(Aes_Mode):
                     s.add(self.aes[b].cipher[-1][i][j] == self.cipher[b][i][j])
 
 class Aes_Cfb(Aes_Mode):
-    def __init__(self, keylength, size_message):
-        super().__init__(keylength, size_message)
+    def __init__(self, keylength, size_message, prefix):
+        super().__init__(keylength, size_message, prefix)
 
     def init_mode(self, s):
         for i in range(4):
@@ -186,8 +186,8 @@ class Aes_Cfb(Aes_Mode):
                     s.add(self.aes[b].message[i][j] == self.cipher[b-1][i][j])
 
 class Aes_Ctr(Aes_Mode):
-    def __init__(self, keylength, size_message):
-        super().__init__(keylength, size_message)
+    def __init__(self, keylength, size_message, prefix):
+        super().__init__(keylength, size_message, prefix)
 
     def init_mode(self, s):
         # We concatenate the initial vector for the addition. Concatenation is column order
@@ -213,8 +213,8 @@ class Aes_Ctr(Aes_Mode):
                     s.add(self.cipher[b][i][j] == self.aes[b].cipher[-1][i][j] ^ self.message[b][i][j])
 
 class Aes_Ofb(Aes_Mode):
-    def __init__(self, keylength, size_message):
-        super().__init__(keylength, size_message)
+    def __init__(self, keylength, size_message, prefix):
+        super().__init__(keylength, size_message, prefix)
 
     def init_mode(self, s):
         for i in range(4):
