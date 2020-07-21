@@ -1,7 +1,7 @@
 from z3 import *
 from Hash.constant import Ksha, Hsha, sha_param
 
-class Sha():
+class Sha2():
     """ Class which implements Hash function compliance with the FIPS 180 """
     message = 0
     def __init__(self, sha_type, prefix='message_'):
@@ -63,7 +63,7 @@ class Sha():
 
     def preimage(self, round_attacked, hash_value):
         """ Performs a preimage attack in function of reduced hash and the number of reduced round """
-        Sha.reset(self)
+        Sha2.reset(self)
         i = 0
         size_word = self.hash_param['Mblock']//(64) 
         for key, value in sorted(self.state[round_attacked].items()):
@@ -137,7 +137,7 @@ class Sha():
 
     def reset(self):
         """ reset the solver of the class """
-        self.s = Sha.resetSolver(self)
+        self.s = Sha2.resetSolver(self)
 
     def resetSolver(self):
         """ Create a solver """
