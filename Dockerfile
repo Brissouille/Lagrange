@@ -22,6 +22,7 @@ WORKDIR python
 COPY *.py ./Lagrange/
 COPY Cipher/*.py ./Lagrange/Cipher/
 COPY Hash/*.py ./Lagrange/Hash/
+COPY tests/*.py ./Lagrange/tests/
 
 
 # Execute this function when the container is launched
