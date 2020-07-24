@@ -1,5 +1,6 @@
 from z3 import *
 from math import log
+from copy import deepcopy
 
 class Sha3():
     dx = [3, 4, 0, 1, 2]
@@ -38,6 +39,43 @@ class Sha3():
                     self.A[i][j][k] = self.A[i][j][k] ^ d[i][k]
                 
 
+    def rho(self):
+        A = [0] * 5 
+        for i in range(5):
+            A[i] = [0] * 5
+            for j in range(5):
+                A[i][j] = [0] * self.w
+                for k in range(self.w):
+                    A[i][j][k] = 0 
+
+        for z in range(self.w):
+            A[self.dx[0]][self.dy[0]][z] = self.A[self.dx[0]][self.dy[0]][z]
+
+        x = 1
+        y = 0
+        for t in range(24):
+            for z in range(self.w):
+                A[self.dx[x]][self.dy[y]][z] = self.A[self.dx[x]][self.dy[y]][(z-(t+1)*(t+2)//2)%self.w]
+            x, y = (y, (2 * self.dx[x] + 3 * self.dy[y]) % 5)
+        self.A = A
+
+    def pi(self):
+        A = [0] * 5
+        for i in range(5):
+            A[i] = [0] * 5
+            for j in range(5):
+                A[i][j] = [0] * self.w
+                for k in range(self.w):
+                    A[i][j][k] = 0
+        for i in range(5):
+            for j in range(5):
+                for k in range(self.w):
+                    A[self.dx[i]][self.dy[j]][k] = self.A[self.dx[i]][self.dy[j]][k] 
+        self.A = A
+
 sha3 = Sha3(50)
-sha3.teta()
-print(sha3.A[0][0][0])
+print(sha3.A)
+#sha3.teta()
+#sha3.rho()
+sha3.pi()
+print(sha3.A)
