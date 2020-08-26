@@ -42,7 +42,7 @@ for l in range(10,11):
         for j in range(2,4):
             aes.addPartialKey(l-1, j, i, int(key_test[l-1][2*(j*4+i):2*(j*4+i+1)], 16))
 
-# Resolver equation to found master key
+# Resolver equation to find master key
 solution = aes.check()
 print(solution)
 ```
