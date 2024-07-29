@@ -10,9 +10,8 @@ class Chacha20():
 
         self.const   = self.state[0]
         self.key     = [self.state[1], self.state[2]]
-        self.counter = [self.state[3][0], self.state[3][1]]
-        self.nonce   = [self.state[3][2], self.state[3][3]]
-        
+        self.counter = self.state[3][0]
+        self.nonce   = [self.state[3][1], self.state[3][2], self.state[3][3]]
 
         self.s = Chacha20.resetSolver(self)
         
@@ -72,14 +71,14 @@ class Chacha20():
         
         # We iterate on 8 key blocks
         for i in range(0, len(key), 8):
-            self.s.add( int(key[i:i+8],16) == self.key[i//32][(i//8)%4] )
+            self.s.add( int(key[i:i+8], 16) == self.key[i//32][(i//8)%4] )
 
         plain_len = len(plain) // 2
 
         assert(plain_len <= 32)
 
         plaintext = BitVecs(["plain_%02d" %(i) for i in range(plain_len)], 8)
-
+        
         ciphertext = BitVecs(["cipher_%02d" %(i) for i in range(plain_len)], 8)
         
         for i in range(0, plain_len, 4):
@@ -88,14 +87,28 @@ class Chacha20():
                 self.s.add((plaintext[i+j]) == int(plain[2*(i+j):2*(i+j+1)]))
             word_cipher = word_plain ^ self.state[i//16][i//4]
             self.s.add(word_cipher == Concat(ciphertext[i:i+4]))
-       
-        print(self.s)
+        
+        assert(len(counter) == 8)
+        counter_len = len(counter)
+
+        for i in range(0, counter_len, 8):
+            self.s.add(self.counter == int(counter[i:i+8], 16))
+
+        assert(len(nonce) == 24)
+        nonce_len = len(nonce)
+
+        for i in range(0, nonce_len, 8):
+            self.s.add(self.nonce[i//8] == int(nonce[i:i+8],16))
+
         if (self.s.check() == sat):
             print("Encryption")
-            print(self.s.model())
+            for i in range(4):
+                for j in range(4):
+                    print("{:02x}".format(int(str(self.s.model().evaluate(self.state[i][j])))), end=' ')
+                print()
         
 
             
 
 a = Chacha20()
-a.encrypt("000102030405060708090A0B0C0D0E0F000102030405060708090A0B0C0D0E0F", "0102030405060708")
+a.encrypt("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "000000090000004a00000000", "01"+"00"*3, "00"*8)
