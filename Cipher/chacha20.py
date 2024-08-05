@@ -25,8 +25,9 @@ class Chacha20():
         self.ciphertext = BitVecs(["cipher_%02d" %(i) for i in range(512)], 8)
 
         self.s = Chacha20.resetSolver(self)
-
+        
         self.encryption()
+
 
 
     def resetSolver(self):
@@ -37,6 +38,7 @@ class Chacha20():
         s.add(self.const[1] == int.from_bytes(b"nd 3", "little"))
         s.add(self.const[2] == int.from_bytes(b"2-by", "little"))
         s.add(self.const[3] == int.from_bytes(b"te k", "little"))
+
 
         return s
 
@@ -60,7 +62,7 @@ class Chacha20():
         # Final step : Addition with the initial state
         for i in range(4):
             for j in range(4):
-                self.state[-1][i][j] = self.state[-2][i][j] + self.state[0][i][j]
+                self.state[-1][i][j] = self.state[-2][i][j] + self.state[0][i][j] 
 
         self.keystream = [0] * 4
         # Create keystream from final state
@@ -74,7 +76,17 @@ class Chacha20():
                 self.third_byte  = ((self.state[-1][i][j] >> 8)  & 0x0000ff00)
                 self.fourth_byte = ((self.state[-1][i][j] >> 24) & 0x000000ff)
                 self.keystream[i][j] = self.first_byte ^ self.second_byte ^ self.third_byte ^ self.fourth_byte
-
+        
+        for i in range(0, 64, 4):
+            # Put in equation the encryption
+            word_plain = Concat(self.plaintext[i:i+4])
+            word_cipher = word_plain ^ self.keystream[i//16][i%4]
+            self.s.add(word_cipher == Concat(self.ciphertext[i:i+4]))
+        
+            # Put in equation the decryption
+            word_cipher = Concat(self.ciphertext[i:i+4])
+            word_plain = word_cipher ^ self.keystream[i//16][i%4]
+            self.s.add(word_plain == Concat(self.plaintext[i:i+4]))
 
     def quarter_round(self, l, index_a, index_b, index_c, index_d):
 
@@ -105,6 +117,7 @@ class Chacha20():
         """ reset the solver of the class """
         self.s.reset()
         self.s = Chacha20.resetSolver(self)
+        self.encryption()
 
     def addMessage(self, message, message_len):
         for i in range(0, message_len, 4):
@@ -135,7 +148,7 @@ class Chacha20():
         assert(len(key) == 2 * 32)
 
         plain_len = len(plain) // 2
-        assert(plain_len <= 32)
+        assert(plain_len <= (2 * 32))
 
         counter_len = len(counter)
         assert(counter_len == 8)
@@ -151,11 +164,6 @@ class Chacha20():
             self.s.add( key_tmp == self.key[i//32][(i//8)%4] )
 
         self.addMessage(plain, plain_len)
-
-        for i in range(0, plain_len, 4):
-            word_plain = Concat(self.plaintext[i:i+4])
-            word_cipher = word_plain ^ self.keystream[i//16][i//4]
-            self.s.add(word_cipher == Concat(self.ciphertext[i:i+4]))
 
         self.addCounter(counter, counter_len)
 
@@ -177,7 +185,7 @@ class Chacha20():
         assert(len(key) == 2 * 32)
 
         cipher_len = len(cipher) // 2
-        assert(cipher_len <= 32)
+        assert(cipher_len <= 2 * 32)
 
         counter_len = len(counter)
         assert(counter_len == 8)
@@ -193,11 +201,6 @@ class Chacha20():
             self.s.add( key_tmp == self.key[i//32][(i//8)%4] )
 
         self.addCipher(cipher, cipher_len)
-
-        for i in range(0, cipher_len, 4):
-            word_cipher = Concat(self.ciphertext[i:i+4])
-            word_plain = word_cipher ^ self.keystream[i//16][i//4]
-            self.s.add(word_plain == Concat(self.plaintext[i:i+4]))
 
         for i in range(0, counter_len, 8):
             # No need to convert into little endian
@@ -228,4 +231,5 @@ a = Chacha20()
 a.encrypt("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "000000000000004a00000000", "00000001", "4c61646965732061")
 a.reset()
 a.decrypt("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "000000000000004a00000000", "00000001", "f1b784f8b7c598cf")
+a.reset()
 
