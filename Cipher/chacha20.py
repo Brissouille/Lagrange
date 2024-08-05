@@ -20,6 +20,10 @@ class Chacha20():
         self.counter = self.state[0][3][0]
         self.nonce   = [self.state[0][3][1], self.state[0][3][2], self.state[0][3][3]]
 
+        self.plaintext = BitVecs([prefix+"_%02d" %(i) for i in range(512)], 8)
+
+        self.ciphertext = BitVecs(["cipher_%02d" %(i) for i in range(512)], 8)
+
         self.s = Chacha20.resetSolver(self)
 
         self.encryption()
@@ -97,6 +101,36 @@ class Chacha20():
         self.state[l][index_c // 4][index_c % 4] = c
         self.state[l][index_d // 4][index_d % 4] = d
 
+    def reset(self):
+        """ reset the solver of the class """
+        self.s.reset()
+        self.s = Chacha20.resetSolver(self)
+
+    def addMessage(self, message, message_len):
+        for i in range(0, message_len, 4):
+            word_plain = Concat(self.plaintext[i:i+4])
+            for j in range(0, 4):
+                self.s.add((self.plaintext[i+j]) == int(message[2*(i+j):2*(i+j+1)], 16))
+
+    def addCipher(self, cipher, cipher_len):
+        for i in range(0, cipher_len, 4):
+            word_cipher = Concat(self.ciphertext[i:i+4])
+            for j in range(0, 4):
+                self.s.add((self.ciphertext[i+j]) == int(cipher[2*(i+j):2*(i+j+1)], 16))
+
+    def addNonce(self, nonce, nonce_len):
+        for i in range(0, nonce_len, 8):
+            # Convert 4 bytes into int (ex 00:01:02:03 -> 03020100)
+            nonce_tmp = int(nonce[i:i+8], 16)
+            nonce_tmp = int.from_bytes(nonce_tmp.to_bytes(4, "little"), "big")
+            self.s.add(self.nonce[i//8] == nonce_tmp)
+
+    def addCounter(self, counter, counter_len):
+        for i in range(0, counter_len, 8):
+            # No need to convert into little endian
+            counter_tmp = int(counter[i:i+8], 16)
+            self.s.add(self.counter == counter_tmp)
+
     def encrypt(self, key, nonce, counter, plain):
         assert(len(key) == 2 * 32)
 
@@ -109,10 +143,6 @@ class Chacha20():
         nonce_len = len(nonce)
         assert(nonce_len == 24)
 
-        plaintext = BitVecs(["plain_%02d" %(i) for i in range(plain_len)], 8)
-
-        ciphertext = BitVecs(["cipher_%02d" %(i) for i in range(plain_len)], 8)
-
         # We iterate on 8 key blocks
         for i in range(0, len(key), 8):
             # Convert 4 bytes into little endian int (ex 00:01:02:03 -> 03020100)
@@ -120,34 +150,27 @@ class Chacha20():
             key_tmp = int.from_bytes(key_tmp.to_bytes(4, "little"), "big")
             self.s.add( key_tmp == self.key[i//32][(i//8)%4] )
 
+        self.addMessage(plain, plain_len)
+
         for i in range(0, plain_len, 4):
-            word_plain = Concat(plaintext[i:i+4])
-            for j in range(0, 4):
-                self.s.add((plaintext[i+j]) == int(plain[2*(i+j):2*(i+j+1)], 16))
+            word_plain = Concat(self.plaintext[i:i+4])
             word_cipher = word_plain ^ self.keystream[i//16][i//4]
-            self.s.add(word_cipher == Concat(ciphertext[i:i+4]))
+            self.s.add(word_cipher == Concat(self.ciphertext[i:i+4]))
 
-        for i in range(0, counter_len, 8):
-            # No need to convert into little endian
-            counter_tmp = int(counter[i:i+8], 16)
-            self.s.add(self.counter == counter_tmp)
+        self.addCounter(counter, counter_len)
 
-        for i in range(0, nonce_len, 8):
-            # Convert 4 bytes into int (ex 00:01:02:03 -> 03020100)
-            nonce_tmp = int(nonce[i:i+8], 16)
-            nonce_tmp = int.from_bytes(nonce_tmp.to_bytes(4, "little"), "big")
-            self.s.add(self.nonce[i//8] == nonce_tmp)
+        self.addNonce(nonce, nonce_len)
 
         if (self.s.check() == sat):
             print("Encryption")
             print("#"*10)
             for i in range(plain_len):
-                print("{:02x}".format(int(str(self.s.model().evaluate(plaintext[i])))), end=' ')
+                print("{:02x}".format(int(str(self.s.model().evaluate(self.plaintext[i])))), end=' ')
             print()
 
             print("#"*10)
             for i in range(plain_len):
-                print("{:02x}".format(int(str(self.s.model().evaluate(ciphertext[i])))), end=' ')
+                print("{:02x}".format(int(str(self.s.model().evaluate(self.ciphertext[i])))), end=' ')
             print()
 
     def decrypt(self, key, nonce, counter, cipher):
@@ -162,10 +185,6 @@ class Chacha20():
         nonce_len = len(nonce)
         assert(nonce_len == 24)
 
-        plaintext = BitVecs(["plain_%02d" %(i) for i in range(cipher_len)], 8)
-
-        ciphertext = BitVecs(["cipher_%02d" %(i) for i in range(cipher_len)], 8)
-
         # We iterate on 8 key blocks
         for i in range(0, len(key), 8):
             # Convert 4 bytes into little endian int (ex 00:01:02:03 -> 03020100)
@@ -173,12 +192,12 @@ class Chacha20():
             key_tmp = int.from_bytes(key_tmp.to_bytes(4, "little"), "big")
             self.s.add( key_tmp == self.key[i//32][(i//8)%4] )
 
+        self.addCipher(cipher, cipher_len)
+
         for i in range(0, cipher_len, 4):
-            word_cipher = Concat(ciphertext[i:i+4])
-            for j in range(0, 4):
-                self.s.add((ciphertext[i+j]) == int(cipher[2*(i+j):2*(i+j+1)], 16))
+            word_cipher = Concat(self.ciphertext[i:i+4])
             word_plain = word_cipher ^ self.keystream[i//16][i//4]
-            self.s.add(word_plain == Concat(plaintext[i:i+4]))
+            self.s.add(word_plain == Concat(self.plaintext[i:i+4]))
 
         for i in range(0, counter_len, 8):
             # No need to convert into little endian
@@ -195,17 +214,18 @@ class Chacha20():
             print("Decryption")
             print("#"*10)
             for i in range(cipher_len):
-                print("{:02x}".format(int(str(self.s.model().evaluate(ciphertext[i])))), end=' ')
+                print("{:02x}".format(int(str(self.s.model().evaluate(self.ciphertext[i])))), end=' ')
             print()
 
             print("#"*10)
             for i in range(cipher_len):
-                print("{:02x}".format(int(str(self.s.model().evaluate(plaintext[i])))), end=' ')
+                print("{:02x}".format(int(str(self.s.model().evaluate(self.plaintext[i])))), end=' ')
             print()
 
 
 
 a = Chacha20()
 a.encrypt("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "000000000000004a00000000", "00000001", "4c61646965732061")
+a.reset()
 a.decrypt("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f", "000000000000004a00000000", "00000001", "f1b784f8b7c598cf")
 
